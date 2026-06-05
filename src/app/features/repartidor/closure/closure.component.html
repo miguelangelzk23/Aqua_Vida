@@ -1,0 +1,215 @@
+<div class="space-y-6 pb-6">
+  <h2 class="text-xl font-bold text-slate-800 font-black">Cierre de Jornada</h2>
+
+  @if (loading()) {
+    <!-- Cargando -->
+    <div class="flex flex-col items-center justify-center py-12 space-y-3">
+      <span class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-medium">Cargando datos de cierre...</span>
+    </div>
+  } @else {
+
+    <!-- CASO 1: SIN JORNADA ACTIVA -->
+    @if (!activeLoad()) {
+      <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-sm space-y-4">
+        <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+          <svg lucideAlertCircle class="w-6 h-6"></svg>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-800">Sin Jornada Abierta</h3>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto font-medium">No tienes ninguna jornada abierta en este momento para realizar un cierre.</p>
+      </div>
+    }
+
+    <!-- CASO 2: JORNADA YA CERRADA (MOSTRAR RESUMEN) -->
+    @else if (activeLoad().status === 'closed') {
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+        <div class="text-center space-y-2">
+          <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <svg lucideCheckCircle class="w-7 h-7"></svg>
+          </div>
+          <h3 class="text-lg font-black text-slate-800">Jornada Cerrada</h3>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cierre: {{ closureData()?.closure_date | date:'medium' }}</p>
+        </div>
+
+        <!-- Resumen Financiero del Cierre -->
+        <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-2">Arqueo Entregado</h4>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-semibold">💵 Ventas en Efectivo:</span>
+              <span class="font-extrabold text-slate-800 text-sm">&#36;{{ closureData()?.total_sales_cash | number:'1.0-0' }}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-semibold">📱 Ventas por Transferencia:</span>
+              <span class="font-extrabold text-slate-800 text-sm">&#36;{{ closureData()?.total_sales_transfer | number:'1.0-0' }}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500 font-semibold">💳 Ventas en Otro Método:</span>
+              <span class="font-extrabold text-slate-800 text-sm">&#36;{{ closureData()?.total_sales_other | number:'1.0-0' }}</span>
+            </div>
+            <div class="flex justify-between items-center text-sm border-t border-slate-200 pt-3">
+              <span class="font-black text-slate-900">Total Liquidado:</span>
+              <span class="text-base font-black text-blue-650">&#36;{{ closureData()?.total_sales_amount | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        @if (closureData()?.observations) {
+          <div class="bg-blue-50/50 rounded-2xl p-4.5 border border-blue-100 flex items-start space-x-3">
+            <svg lucideMessageSquare class="w-5 h-5 text-blue-500 shrink-0 mt-0.5"></svg>
+            <div>
+              <span class="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-0.5">Observaciones de Entrega</span>
+              <p class="text-xs text-blue-900/80 font-semibold leading-relaxed">{{ closureData()?.observations }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- CASO 3: JORNADA ABIERTA (FORMULARIO PARA EJECUTAR CIERRE) -->
+    @else {
+      <!-- Comparativa de Inventario de Cierre -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+        <h3 class="font-extrabold text-slate-850 text-xs uppercase tracking-wider border-b border-slate-100 pb-3">Devoluciones a Bodega</h3>
+        
+        <div class="divide-y divide-slate-100">
+          @for (item of mobileInventory(); track item.productId) {
+            <div class="py-3.5 flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-black text-slate-800 leading-tight">{{ item.name }}</h4>
+                <span class="text-[10px] text-slate-400 font-semibold uppercase">{{ item.unit }}</span>
+              </div>
+              <div class="flex space-x-3 text-right">
+                <div class="bg-slate-50 px-2 py-0.5 rounded-lg text-center">
+                  <span class="block text-[8px] text-slate-400 font-bold uppercase">Cargado</span>
+                  <span class="block text-[11px] font-bold text-slate-700">{{ item.loaded }}</span>
+                </div>
+                <div class="bg-blue-50 px-2 py-0.5 rounded-lg text-center">
+                  <span class="block text-[8px] text-blue-400 font-bold uppercase">Vendido</span>
+                  <span class="block text-[11px] font-bold text-blue-600">{{ item.sold }}</span>
+                </div>
+                <div class="bg-red-50 px-2 py-0.5 rounded-lg text-center border border-red-100">
+                  <span class="block text-[8px] text-red-400 font-bold uppercase">Devuelve</span>
+                  <span class="block text-xs font-black text-red-650">{{ item.remaining }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Resumen de Caja a Entregar -->
+      <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-md space-y-5">
+        <h3 class="font-extrabold text-xs uppercase tracking-wider text-cyan-400 border-b border-white/10 pb-2">Arqueo Financiero del Día</h3>
+        
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+            <span class="block text-[9px] text-slate-400 font-bold uppercase mb-1">💵 Efectivo</span>
+            <span class="text-sm font-extrabold">&#36;{{ salesCash() | number:'1.0-0' }}</span>
+          </div>
+          <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+            <span class="block text-[9px] text-slate-400 font-bold uppercase mb-1">📱 Transfer</span>
+            <span class="text-sm font-extrabold">&#36;{{ salesTransfer() | number:'1.0-0' }}</span>
+          </div>
+          <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+            <span class="block text-[9px] text-slate-400 font-bold uppercase mb-1">💳 Otro</span>
+            <span class="text-sm font-extrabold">&#36;{{ salesOther() | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-white/10 pt-4">
+          <span class="font-extrabold text-xs text-cyan-400 uppercase tracking-wider">Total a Liquidar</span>
+          <span class="text-2xl font-black text-cyan-400">&#36;{{ salesTotal() | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <!-- Formulario de observaciones y Botón Cierre -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Observaciones del Cierre</label>
+          <textarea 
+            [(ngModel)]="observations"
+            placeholder="Escribe alguna novedad, entrega de dinero parcial, descuadres, etc. (Opcional)"
+            rows="3"
+            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-semibold shadow-inner"
+          ></textarea>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="p-3.5 bg-red-500/10 border border-red-500/20 text-red-700 rounded-xl text-xs font-semibold animate-pulse">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <button 
+          (click)="confirmClosure()"
+          [disabled]="actionLoading()"
+          class="w-full py-4.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-extrabold rounded-2xl shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+        >
+          @if (actionLoading()) {
+            <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span>Cerrando Jornada...</span>
+          } @else {
+            <svg lucideClipboardCheck class="w-5 h-5"></svg>
+            <span>Confirmar Cierre de Jornada</span>
+          }
+        </button>
+      </div>
+    }
+  }
+
+  <!-- Modal de Confirmación de Cierre -->
+  @if (showConfirmModal()) {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-6 transform transition-all duration-300 translate-y-0 sm:scale-100 animate-slideUp">
+        
+        <!-- Icono advertencia -->
+        <div class="flex flex-col items-center text-center space-y-2">
+          <div class="w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center shadow-inner">
+            <svg lucideAlertCircle class="w-7 h-7 stroke-[2.5]"></svg>
+          </div>
+          <h3 class="text-base font-black text-slate-800 pt-1">¿Cerrar Jornada Diaria?</h3>
+          <p class="text-xs text-slate-500 font-semibold leading-relaxed px-2">
+            Esta acción devolverá automáticamente toda la mercancía restante al almacén principal y registrará la liquidación de caja. No podrás añadir más ventas hoy.
+          </p>
+        </div>
+
+        <!-- Resumen de Cierre en Modal -->
+        <div class="bg-slate-50 border border-slate-150/60 rounded-2xl p-4 space-y-3">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Total Efectivo:</span>
+            <span class="font-extrabold text-slate-800">&#36;{{ salesCash() | number:'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Total Transferencias:</span>
+            <span class="font-extrabold text-slate-800">&#36;{{ salesTransfer() | number:'1.0-0' }}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs border-t border-slate-200/60 pt-2.5">
+            <span class="font-black text-slate-900">Total a Liquidar:</span>
+            <span class="text-sm font-black text-red-650">&#36;{{ salesTotal() | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones de Modal -->
+        <div class="flex space-x-3">
+          <button 
+            type="button"
+            (click)="closeConfirmModal()"
+            class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors active:scale-95 cursor-pointer text-center"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="button"
+            (click)="executeClosure()"
+            class="flex-1 py-3.5 bg-gradient-to-r from-red-600 to-rose-650 hover:from-red-500 hover:to-rose-500 text-white font-extrabold rounded-2xl text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all cursor-pointer text-center"
+          >
+            Confirmar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

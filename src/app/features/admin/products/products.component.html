@@ -1,0 +1,193 @@
+<div class="space-y-8">
+  
+  <!-- Encabezado -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="p-3 bg-cyan-100 text-cyan-600 rounded-2xl">
+        <svg lucideShoppingBag class="w-6 h-6"></svg>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-slate-800">Catálogo de Productos</h2>
+        <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Gestión de productos y precios base de venta</p>
+      </div>
+    </div>
+    
+    @if (!showForm()) {
+      <button 
+        (click)="openAddForm()"
+        class="px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm rounded-xl shadow-md flex items-center space-x-1.5 active:scale-95 transition-all cursor-pointer"
+      >
+        <svg lucidePlus class="w-4 h-4"></svg>
+        <span>Agregar Producto</span>
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <!-- Cargando -->
+    <div class="flex flex-col items-center justify-center py-16 space-y-3">
+      <span class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-semibold">Cargando catálogo...</span>
+    </div>
+  } @else {
+    
+    <!-- Tabla de Productos (Ocupa ancho completo) -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+      <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-3">Lista de Productos</h3>
+      
+      <div class="overflow-x-auto -mx-6 sm:mx-0">
+        <div class="inline-block min-w-full align-middle px-6 sm:px-0">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                <th class="py-3 pr-4">Nombre del Producto</th>
+                <th class="py-3 px-4">Unidad</th>
+                <th class="py-3 px-4">Precio Base</th>
+                <th class="py-3 px-4 text-center">Estado</th>
+                <th class="py-3 pl-4 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-sm">
+              @for (prod of products(); track prod.id) {
+                <tr class="hover:bg-slate-50/50 transition-all">
+                  <td class="py-4 pr-4 font-bold text-slate-800">{{ prod.name }}</td>
+                  <td class="py-4 px-4 font-semibold text-slate-500">{{ prod.unit }}</td>
+                  <td class="py-4 px-4 font-bold text-slate-700">&#36;{{ prod.base_price | number:'1.2-2' }}</td>
+                  <td class="py-4 px-4 text-center">
+                    <button 
+                      (click)="toggleProductStatus(prod)"
+                      [disabled]="actionLoading()"
+                      [class]="prod.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400 border border-slate-200'"
+                      class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                      {{ prod.is_active ? 'Activo' : 'Inactivo' }}
+                    </button>
+                  </td>
+                  <td class="py-4 pl-4 text-right">
+                    <button 
+                      (click)="openEditForm(prod)"
+                      class="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-xl transition-all cursor-pointer"
+                      title="Editar"
+                    >
+                      <svg lucideEdit3 class="w-4.5 h-4.5"></svg>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="text-center py-10 text-slate-400 font-medium">No hay productos registrados en el catálogo.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Formulario Agregar / Editar (Premium Overlay) -->
+    @if (showForm()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5 transform transition-all duration-300 scale-100 animate-slideUp">
+          
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-base">
+              {{ isEditMode() ? 'Editar Producto' : 'Nuevo Producto' }}
+            </h3>
+            <button (click)="closeForm()" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg cursor-pointer">
+              <svg lucideX class="w-5 h-5"></svg>
+            </button>
+          </div>
+
+          @if (errorMessage()) {
+            <div class="p-3.5 bg-red-500/10 border border-red-500/20 text-red-700 rounded-xl text-xs font-semibold">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="space-y-4">
+            <!-- Nombre -->
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre del Producto</label>
+              <input 
+                type="text" 
+                formControlName="name"
+                placeholder="Ej. Botellón de 20 Litros"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm font-semibold transition-all shadow-inner"
+              />
+              @if (productForm.get('name')?.touched && productForm.get('name')?.invalid) {
+                <span class="text-xs text-red-400 mt-1 block">El nombre es requerido.</span>
+              }
+            </div>
+
+            <!-- Unidad -->
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Presentación / Unidad</label>
+              <input 
+                type="text" 
+                formControlName="unit"
+                placeholder="Ej. Botellón 20L, Bolsa 5L, Paca x24"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm font-semibold transition-all shadow-inner"
+              />
+              @if (productForm.get('unit')?.touched && productForm.get('unit')?.invalid) {
+                <span class="text-xs text-red-400 mt-1 block">La unidad/presentación es requerida.</span>
+              }
+            </div>
+
+            <!-- Precio Base -->
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Precio de Venta Base ($)</label>
+              <input 
+                type="number" 
+                formControlName="base_price"
+                placeholder="0.00"
+                min="0"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm font-bold transition-all shadow-inner"
+              />
+              @if (productForm.get('base_price')?.touched && productForm.get('base_price')?.invalid) {
+                <span class="text-xs text-red-400 mt-1 block">Ingresa un precio válido (mayor o igual a 0).</span>
+              }
+            </div>
+
+            <!-- Estado Activo/Inactivo -->
+            <div class="flex items-center space-x-3 pt-2">
+              <input 
+                type="checkbox" 
+                id="is_active" 
+                formControlName="is_active"
+                class="w-5 h-5 rounded border-slate-350 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+              />
+              <label for="is_active" class="text-sm font-bold text-slate-700 cursor-pointer select-none">Habilitar Producto (Activo)</label>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex space-x-3 pt-4 border-t border-slate-100">
+              <button 
+                type="button" 
+                (click)="closeForm()"
+                class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                [disabled]="productForm.invalid || actionLoading()"
+                class="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-2"
+              >
+                @if (actionLoading()) {
+                  <span class="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  <svg lucideCheck class="w-4 h-4"></svg>
+                  <span>Guardar</span>
+                }
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    }
+
+  }
+
+</div>

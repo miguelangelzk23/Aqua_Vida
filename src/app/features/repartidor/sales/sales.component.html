@@ -1,0 +1,322 @@
+<div class="space-y-6 pb-6">
+  
+  <!-- Encabezado con Botón de Creación -->
+  <div class="flex items-center justify-between">
+    <h2 class="text-xl font-bold text-slate-800">Registro de Ventas</h2>
+    @if (!showForm() && activeLoad()) {
+      <button 
+        (click)="openSaleForm()"
+        class="px-4 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-2xl shadow-md flex items-center space-x-1.5 active:scale-95 transition-all cursor-pointer"
+      >
+        <svg lucidePlus class="w-4 h-4"></svg>
+        <span>Nueva Venta</span>
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <!-- Cargando -->
+    <div class="flex flex-col items-center justify-center py-12 space-y-3">
+      <span class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-medium">Cargando ventas...</span>
+    </div>
+  } @else {
+    
+    <!-- Si no hay jornada abierta en Supabase -->
+    @if (!activeLoad()) {
+      <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-sm space-y-4">
+        <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
+          <svg lucideAlertCircle class="w-6 h-6"></svg>
+        </div>
+        <h3 class="text-base font-bold text-slate-800">Sin Jornada Activa</h3>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto font-medium">Debes iniciar tu jornada desde el panel de inicio antes de poder registrar ventas.</p>
+      </div>
+    }
+
+    <!-- FORMULARIO DE NUEVA VENTA -->
+    @else if (showForm()) {
+      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-black text-slate-850 text-base">Registrar Venta</h3>
+          <button (click)="closeSaleForm()" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer">
+            <svg lucideX class="w-5 h-5"></svg>
+          </button>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="p-3.5 bg-red-500/10 border border-red-500/20 text-red-700 rounded-xl text-xs font-semibold animate-pulse">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <form [formGroup]="saleForm" (ngSubmit)="submitSale()" class="space-y-5">
+          <!-- Datos del Cliente (Opcional) -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Cliente / Negocio <span class="text-[9px] text-slate-400 font-normal">(Opcional)</span></label>
+              <input 
+                type="text" 
+                formControlName="client_name"
+                placeholder="Ej. Tienda Doña María"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold shadow-inner"
+              />
+            </div>
+            
+            <!-- Métodos de Pago táctiles -->
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Método de Pago</label>
+              <div class="grid grid-cols-3 gap-2.5">
+                <button 
+                  type="button" 
+                  (click)="setPaymentMethod('efectivo')"
+                  [class]="saleForm.get('payment_method')?.value === 'efectivo' ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-[1.02]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+                  class="flex flex-col items-center justify-center py-3 border rounded-2xl text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  <span class="text-xl mb-1 select-none">💵</span>
+                  <span>Efectivo</span>
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setPaymentMethod('transferencia')"
+                  [class]="saleForm.get('payment_method')?.value === 'transferencia' ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-[1.02]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+                  class="flex flex-col items-center justify-center py-3 border rounded-2xl text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  <span class="text-xl mb-1 select-none">📱</span>
+                  <span>Transfer</span>
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setPaymentMethod('otro')"
+                  [class]="saleForm.get('payment_method')?.value === 'otro' ? 'bg-blue-600 border-blue-600 text-white shadow-md scale-[1.02]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+                  class="flex flex-col items-center justify-center py-3 border rounded-2xl text-[11px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  <span class="text-xl mb-1 select-none">💳</span>
+                  <span>Otro</span>
+                </button>
+              </div>
+              <input type="hidden" formControlName="payment_method" />
+            </div>
+          </div>
+
+          <!-- Detalles / Dirección (Opcional) -->
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Observación / Dirección <span class="text-[9px] text-slate-400 font-normal">(Opcional)</span></label>
+            <input 
+              type="text" 
+              formControlName="description"
+              placeholder="Ej. Calle 5 # 10-20, portón azul"
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-850 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-semibold shadow-inner"
+            />
+          </div>
+
+          <!-- ITEMS DE LA VENTA -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Productos a Vender</span>
+              <button 
+                type="button"
+                (click)="addItem()"
+                class="text-xs text-blue-600 hover:text-blue-500 font-black flex items-center space-x-1 cursor-pointer"
+              >
+                <svg lucidePlus class="w-4 h-4"></svg>
+                <span>Agregar Producto</span>
+              </button>
+            </div>
+
+            <div formArrayName="items" class="space-y-3.5 max-h-96 overflow-y-auto pr-1">
+              @for (item of itemsFormArray.controls; track $index) {
+                <div [formGroupName]="$index" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 relative space-y-3.5 shadow-sm">
+                  
+                  <!-- Cabecera de la tarjeta del producto -->
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-150/50">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Producto #{{ $index + 1 }}</span>
+                    <button 
+                      type="button"
+                      (click)="removeItem($index)"
+                      [disabled]="itemsFormArray.length <= 1"
+                      class="p-1 text-slate-450 hover:text-red-500 disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors"
+                      title="Eliminar fila"
+                    >
+                      <svg lucideTrash2 class="w-4 h-4"></svg>
+                    </button>
+                  </div>
+
+                  <!-- Selector de Producto (Full Width) -->
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Seleccionar Producto</label>
+                    <select 
+                      formControlName="product_id"
+                      (change)="onProductChange($index)"
+                      class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                    >
+                      <option value="">Seleccione un producto</option>
+                      @for (prod of loadedItems(); track prod.productId) {
+                        <option [value]="prod.productId" [disabled]="prod.remaining <= 0">
+                          {{ prod.name }} (Llevas: {{ prod.remaining }})
+                        </option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Controles de Cantidad y Totales -->
+                  <div class="grid grid-cols-2 gap-4 items-center pt-1">
+                    
+                    <!-- Cantidad con botones grandes - y + -->
+                    <div>
+                      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Cantidad</label>
+                      <div class="flex items-center space-x-1">
+                        <button 
+                          type="button"
+                          (click)="decrementQuantity($index)"
+                          [disabled]="getQuantityValue($index) <= 1"
+                          class="w-10 h-10 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-base"
+                        >
+                          -
+                        </button>
+                        <span class="w-8 text-center text-sm font-black text-slate-800 select-none">
+                          {{ getQuantityValue($index) }}
+                        </span>
+                        <button 
+                          type="button"
+                          (click)="incrementQuantity($index)"
+                          [disabled]="getQuantityValue($index) >= getMaxQuantity($index)"
+                          class="w-10 h-10 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-base"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <input type="hidden" formControlName="quantity" />
+                    </div>
+
+                    <!-- Precio y Subtotal -->
+                    <div class="text-right flex flex-col justify-end space-y-0.5">
+                      <span class="text-[10px] font-bold text-slate-400 block uppercase">
+                        Precio: &#36;{{ getUnitPrice($index) | number:'1.0-0' }}
+                      </span>
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Subtotal
+                      </span>
+                      <span class="text-base font-black text-blue-600 block leading-tight">
+                        &#36;{{ getSubtotal($index) | number:'1.0-0' }}
+                      </span>
+                      <input type="hidden" formControlName="unit_price" />
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Total General -->
+          <div class="flex items-center justify-between p-4 bg-slate-900 text-white rounded-2xl shadow-md">
+            <span class="font-extrabold text-xs uppercase tracking-wider text-slate-300">Total Venta</span>
+            <span class="text-2xl font-black text-cyan-400">&#36;{{ calculateTotalSale() | number:'1.2-2' }}</span>
+          </div>
+
+          <!-- Acciones del Formulario -->
+          <div class="flex space-x-3 pt-2">
+            <button 
+              type="button" 
+              (click)="closeSaleForm()"
+              class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-sm transition-colors active:scale-95 cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              [disabled]="saleForm.invalid || actionLoading()"
+              class="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-sm shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              @if (actionLoading()) {
+                <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Registrando...</span>
+              } @else {
+                <svg lucideShoppingCart class="w-4 h-4"></svg>
+                <span>Guardar Venta</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- HISTORIAL DE VENTAS REGISTRADAS HOY -->
+    @else {
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+        <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-3">Mis Ventas de Hoy</h3>
+        
+        <div class="divide-y divide-slate-100">
+          @for (sale of sales(); track sale.id) {
+            <div class="py-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="block text-sm font-bold text-slate-800">{{ sale.client_name || 'Consumidor Final' }}</span>
+                  <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">{{ sale.sale_date | date:'shortTime' }} • {{ sale.payment_method }}</span>
+                </div>
+                <span class="text-base font-bold text-slate-900">&#36;{{ sale.total_amount | number:'1.2-2' }}</span>
+              </div>
+              @if (sale.description) {
+                <p class="text-xs text-slate-500 italic bg-slate-50 px-3 py-1.5 rounded-lg inline-block">{{ sale.description }}</p>
+              }
+              <div class="flex flex-wrap gap-2 pt-1">
+                @for (item of sale.sale_items; track item.id) {
+                  <span class="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase">
+                    {{ item.quantity }}x {{ item.products?.name }}
+                  </span>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="text-center py-8 text-sm text-slate-400 font-medium">Aún no has registrado ninguna venta en esta jornada.</div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Modal de Éxito de Venta -->
+  @if (showSuccessModal() && lastRegisteredSale()) {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-6 transform transition-all duration-300 translate-y-0 sm:scale-100 animate-slideUp">
+        
+        <!-- Icono animado -->
+        <div class="flex flex-col items-center text-center space-y-2">
+          <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shadow-inner animate-bounce">
+            <svg lucideCheck class="w-7 h-7 stroke-[3]"></svg>
+          </div>
+          <h3 class="text-base font-black text-slate-800 pt-1">¡Venta Registrada!</h3>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">La transacción se guardó correctamente</p>
+        </div>
+
+        <!-- Resumen de la venta -->
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3.5">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Cliente:</span>
+            <span class="font-extrabold text-slate-850">{{ lastRegisteredSale().client_name }}</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Productos:</span>
+            <span class="font-extrabold text-slate-850">{{ lastRegisteredSale().item_count }} unidades</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-bold">Método de Pago:</span>
+            <span class="font-extrabold text-slate-800 capitalize bg-slate-200/60 px-2 py-0.5 rounded-lg text-[10px]">{{ lastRegisteredSale().payment_method }}</span>
+          </div>
+          <div class="flex justify-between items-center text-sm border-t border-slate-200 pt-3">
+            <span class="font-black text-slate-900">Cobrado:</span>
+            <span class="text-lg font-black text-blue-600">&#36;{{ lastRegisteredSale().total_amount | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Botón de Acción -->
+        <button 
+          (click)="closeSuccessModal()"
+          class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-2xl shadow-md active:scale-95 transition-all text-xs cursor-pointer text-center uppercase tracking-wider"
+        >
+          Entendido
+        </button>
+
+      </div>
+    </div>
+  }
+</div>

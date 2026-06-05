@@ -1,0 +1,197 @@
+<div class="space-y-8">
+  
+  <!-- Panel de Métricas Rápidas -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    
+    <!-- Tarjeta 1: Total Ventas del Día -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex items-center justify-between group hover:border-cyan-500 hover:shadow-md transition-all duration-300">
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Ventas Hoy</span>
+        <span class="text-2xl font-black text-slate-800 block">&#36;{{ todaySalesTotal() | number:'1.2-2' }}</span>
+      </div>
+      <div class="p-4 bg-cyan-50 text-cyan-600 rounded-2xl group-hover:bg-cyan-500 group-hover:text-white transition-all shadow-inner">
+        <svg lucideDollarSign class="w-6 h-6"></svg>
+      </div>
+    </div>
+
+    <!-- Tarjeta 2: Transacciones del Día -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex items-center justify-between group hover:border-blue-500 hover:shadow-md transition-all duration-300">
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Transacciones Hoy</span>
+        <span class="text-2xl font-black text-slate-800 block">{{ todaySalesCount() }}</span>
+      </div>
+      <div class="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-all shadow-inner">
+        <svg lucideShoppingCart class="w-6 h-6"></svg>
+      </div>
+    </div>
+
+    <!-- Tarjeta 3: Jornadas Abiertas (Repartidores en ruta) -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex items-center justify-between group hover:border-indigo-500 hover:shadow-md transition-all duration-300">
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Repartidores en Ruta</span>
+        <span class="text-2xl font-black text-slate-800 block">{{ activeRoutesCount() }}</span>
+      </div>
+      <div class="p-4 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:bg-indigo-500 group-hover:text-white transition-all shadow-inner">
+        <svg lucideTruck class="w-6 h-6"></svg>
+      </div>
+    </div>
+
+    <!-- Tarjeta 4: Ventas Promedio por Transacción -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex items-center justify-between group hover:border-emerald-500 hover:shadow-md transition-all duration-300">
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Ticket Promedio</span>
+        <span class="text-2xl font-black text-slate-800 block">&#36;{{ ticketAverage() | number:'1.2-2' }}</span>
+      </div>
+      <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner">
+        <svg lucideTrendingUp class="w-6 h-6"></svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Spinner o Feed de Ventas en Tiempo Real -->
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center py-16 space-y-3 bg-white border border-slate-200 rounded-3xl shadow-sm">
+      <span class="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-semibold">Cargando monitor de ventas...</span>
+    </div>
+  } @else {
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Columna Izquierda: Feed de Ventas de Hoy -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm lg:col-span-2 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <svg lucideClock class="w-5 h-5 text-cyan-500"></svg>
+            <h3 class="font-bold text-slate-800 text-lg">Actividad de Ventas (Recientes)</h3>
+          </div>
+          <span class="text-xs font-bold text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full uppercase tracking-wider animate-pulse">En Vivo</span>
+        </div>
+
+        <div class="overflow-x-auto -mx-6 sm:mx-0">
+          <div class="inline-block min-w-full align-middle px-6 sm:px-0">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <th class="py-3 pr-4">Repartidor</th>
+                  <th class="py-3 px-4">Cliente / Tienda</th>
+                  <th class="py-3 px-4">Hora</th>
+                  <th class="py-3 px-4">Método</th>
+                  <th class="py-3 px-4">Items Vendidos</th>
+                  <th class="py-3 pl-4 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-sm">
+                @for (sale of recentSales(); track sale.id) {
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="py-4 pr-4 font-bold text-slate-800">{{ sale.profiles?.full_name }}</td>
+                    <td class="py-4 px-4 text-slate-600 font-medium">{{ sale.client_name || 'Consumidor Final' }}</td>
+                    <td class="py-4 px-4 text-slate-400 font-semibold">{{ sale.sale_date | date:'shortTime' }}</td>
+                    <td class="py-4 px-4">
+                      <span 
+                        [class]="{
+                          'bg-emerald-50 text-emerald-600 border border-emerald-100': sale.payment_method === 'efectivo',
+                          'bg-blue-50 text-blue-600 border border-blue-100': sale.payment_method === 'transferencia',
+                          'bg-slate-50 text-slate-600 border border-slate-100': sale.payment_method === 'otro'
+                        }"
+                        class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                      >
+                        {{ sale.payment_method }}
+                      </span>
+                    </td>
+                    <td class="py-4 px-4">
+                      <div class="flex flex-wrap gap-1 max-w-xs">
+                        @for (item of sale.sale_items; track item.id) {
+                          <span class="text-[10px] font-bold bg-slate-55 text-slate-600 px-2 py-0.5 rounded-md border border-slate-100">
+                            {{ item.quantity }}x {{ item.products?.name }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+                    <td class="py-4 pl-4 text-right font-black text-slate-900">&#36;{{ sale.total_amount | number:'1.2-2' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="text-center py-10 text-slate-400 font-medium">No se han registrado ventas el día de hoy.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna Derecha: Resumen de Métodos de Pago y Ruta -->
+      <div class="space-y-6">
+        
+        <!-- Métodos de Pago Tarjeta -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-3">Distribución de Caja</h3>
+          
+          <div class="space-y-4">
+            <!-- Efectivo -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span>Efectivo</span>
+                <span class="text-slate-800">&#36;{{ payCash() | number:'1.2-2' }}</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div [style.width.%]="getPercent('efectivo')" class="bg-emerald-500 h-full rounded-full transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- Transferencia -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span>Transferencia</span>
+                <span class="text-slate-800">&#36;{{ payTransfer() | number:'1.2-2' }}</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div [style.width.%]="getPercent('transferencia')" class="bg-blue-500 h-full rounded-full transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- Otro -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span>Otros</span>
+                <span class="text-slate-800">&#36;{{ payOther() | number:'1.2-2' }}</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div [style.width.%]="getPercent('otro')" class="bg-slate-400 h-full rounded-full transition-all duration-500"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jornadas Activas de Repartidores -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-3">Repartidores Activos</h3>
+          <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+            @for (route of activeLoadsList(); track route.id) {
+              <div class="py-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-9 h-9 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center font-black text-xs border border-cyan-100">
+                    {{ route.profiles?.full_name?.charAt(0) }}
+                  </div>
+                  <div>
+                    <span class="block text-sm font-bold text-slate-800">{{ route.profiles?.full_name }}</span>
+                    <span class="block text-[10px] text-cyan-600 font-bold uppercase tracking-wider">En Ruta • Abierta</span>
+                  </div>
+                </div>
+                <span class="text-xs text-slate-400 font-semibold">{{ route.load_date | date:'mediumDate' }}</span>
+              </div>
+            } @empty {
+              <div class="text-center py-6 text-xs text-slate-400 font-medium">No hay repartidores activos hoy.</div>
+            }
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+</div>
