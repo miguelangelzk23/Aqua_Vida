@@ -29,24 +29,25 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
     <div class="space-y-8">
       
       <!-- Encabezado -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="p-3 bg-cyan-100 text-cyan-600 rounded-2xl">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center space-x-4">
+          <div class="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl shadow-md shrink-0">
             <svg lucideWarehouse class="w-6 h-6"></svg>
           </div>
           <div>
-            <h2 class="text-xl font-bold text-slate-800">Inventario General (Bodega)</h2>
-            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Control de existencias físicas disponibles en almacén principal</p>
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight">Inventario General (Bodega)</h2>
+            <p class="text-sm text-slate-500 font-medium mt-0.5">Control de existencias físicas disponibles en almacén principal</p>
           </div>
         </div>
         
         <button 
           (click)="loadInventory()"
           [disabled]="loading()"
-          class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-xl transition-all cursor-pointer flex items-center justify-center disabled:opacity-50 active:scale-95"
+          class="w-full sm:w-auto px-6 py-3.5 bg-white border border-slate-200 hover:border-cyan-500 text-slate-700 hover:text-cyan-600 font-bold text-sm rounded-2xl shadow-sm flex items-center justify-center space-x-2 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           title="Refrescar"
         >
-          <svg lucideRefreshCw [class.animate-spin]="loading()" class="w-5 h-5"></svg>
+          <svg lucideRefreshCw [class.animate-spin]="loading()" class="w-4.5 h-4.5"></svg>
+          <span class="sm:hidden">Refrescar</span>
         </button>
       </div>
 
@@ -66,26 +67,34 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
             
             <div class="divide-y divide-slate-100">
               @for (item of inventory(); track item.product_id) {
-                <div class="py-4 flex items-center justify-between hover:bg-slate-50/20 px-2 rounded-xl transition-colors">
-                  <div>
-                    <h4 class="text-sm font-bold text-slate-800">{{ item.products?.name }}</h4>
-                    <span class="text-xs text-slate-400 font-semibold uppercase">{{ item.products?.unit }}</span>
+                <div class="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 hover:bg-slate-50/50 px-4 sm:px-2 rounded-2xl transition-colors border border-slate-100 sm:border-transparent bg-slate-50/30 sm:bg-transparent shadow-sm sm:shadow-none mb-3 sm:mb-0">
+                  
+                  <div class="flex justify-between items-start sm:block">
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-800">{{ item.products?.name }}</h4>
+                      <span class="text-xs text-slate-500 font-semibold uppercase">{{ item.products?.unit }}</span>
+                    </div>
+                    <!-- Stock en móvil (esquina superior derecha) -->
+                    <div class="text-right sm:hidden">
+                      <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Stock</span>
+                      <span [class]="item.stock > 10 ? 'text-slate-800' : 'text-red-500'" class="text-lg font-black block leading-none mt-0.5">
+                        {{ item.stock }}
+                      </span>
+                    </div>
                   </div>
                   
-                  <div class="flex items-center space-x-6">
-                    <div class="text-right">
+                  <div class="flex items-center justify-between sm:justify-end sm:space-x-6 border-t border-slate-150 sm:border-t-0 pt-3 sm:pt-0">
+                    <!-- Stock en desktop -->
+                    <div class="text-right hidden sm:block">
                       <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Stock Físico</span>
-                      <span 
-                        [class]="item.stock > 10 ? 'text-slate-800' : 'text-red-500'" 
-                        class="text-lg font-black block"
-                      >
+                      <span [class]="item.stock > 10 ? 'text-slate-800' : 'text-red-500'" class="text-lg font-black block">
                         {{ item.stock }}
                       </span>
                     </div>
 
                     <button 
                       (click)="openAdjustForm(item)"
-                      class="px-4 py-2.5 bg-cyan-500/10 hover:bg-cyan-500 hover:text-slate-950 text-cyan-700 font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer flex items-center space-x-1"
+                      class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-cyan-50 hover:bg-cyan-500 hover:text-slate-950 text-cyan-700 font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
                     >
                       <svg lucideArrowUpRight class="w-3.5 h-3.5"></svg>
                       <span>Ajustar Stock</span>
@@ -100,7 +109,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
 
           <!-- Formulario de Ajuste de Stock (1/3) -->
           @if (showForm()) {
-            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5 animate-fadeIn">
+            <div class="fixed inset-0 z-50 flex items-end justify-center p-0 bg-slate-900/60 backdrop-blur-sm animate-fadeIn lg:static lg:flex-none lg:bg-transparent lg:backdrop-blur-none lg:p-0">
+              <div class="bg-white w-full max-w-md rounded-t-[2rem] p-6 pb-10 shadow-2xl space-y-5 transform transition-all duration-300 translate-y-0 animate-slideUp max-h-[90vh] overflow-y-auto lg:w-auto lg:max-w-none lg:rounded-3xl lg:p-6 lg:pb-6 lg:shadow-sm lg:border lg:border-slate-200 lg:animate-fadeIn lg:h-auto lg:max-h-none lg:overflow-visible">
               <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 class="font-bold text-slate-800 text-base">Ajustar Inventario</h3>
                 <button (click)="closeForm()" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-lg cursor-pointer">
@@ -187,6 +197,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
                 </div>
 
               </form>
+            </div>
             </div>
           }
 

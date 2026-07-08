@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { 
@@ -7,10 +7,16 @@ import {
   LucideShoppingCart, 
   LucideCheck, 
   LucideAlertCircle,
-  LucideX
+  LucideX,
+  LucideArrowLeft,
+  LucideBanknote,
+  LucideCreditCard,
+  LucideSmartphone,
+  LucideTag,
+  LucideUser
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 interface LoadedItem {
   productId: string;
@@ -20,6 +26,19 @@ interface LoadedItem {
   loaded: number;
   sold: number;
   remaining: number;
+  priceOptions: number[];
+}
+
+interface CartItem {
+  productId: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  maxQuantity: number;
+  priceOptions: number[];
+  customPriceMode: boolean; // Si está ingresando precio manual
+  isEditing: boolean; // Si el panel está expandido
 }
 
 @Component({
@@ -34,7 +53,13 @@ interface LoadedItem {
     LucideShoppingCart, 
     LucideCheck, 
     LucideAlertCircle,
-    LucideX
+    LucideX,
+    LucideArrowLeft,
+    LucideBanknote,
+    LucideCreditCard,
+    LucideSmartphone,
+    LucideTag,
+    LucideUser
   ],
   templateUrl: './sales.component.html'
 })
@@ -43,18 +68,40 @@ export class RepartidorSalesComponent implements OnInit {
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
 
+  // Estados de UI
   loading = signal<boolean>(true);
   actionLoading = signal<boolean>(false);
-  showForm = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
-
-  activeLoad = signal<any>(null);
-  loadedItems = signal<LoadedItem[]>([]);
-  sales = signal<any[]>([]);
   showSuccessModal = signal<boolean>(false);
   lastRegisteredSale = signal<any>(null);
 
-  saleForm!: FormGroup;
+  isProductModalOpen = signal<boolean>(false);
+
+  // Flujo: history -> client -> cart -> checkout
+  viewState = signal<'history' | 'client' | 'cart' | 'checkout'>('history');
+
+  // Datos
+  activeLoad = signal<any>(null);
+  loadedItems = signal<LoadedItem[]>([]);
+  sales = signal<any[]>([]);
+
+  // Estado del Carrito
+  cart = signal<CartItem[]>([]);
+
+  checkoutForm!: FormGroup;
+
+  // Calculados
+  cartTotal = computed(() => {
+    return this.cart().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  });
+  
+  cartItemsCount = computed(() => {
+    return this.cart().reduce((sum, item) => sum + item.quantity, 0);
+  });
+
+  hasInvalidPrices = computed(() => {
+    return this.cart().some(item => !item.unitPrice || item.unitPrice <= 0);
+  });
 
   ngOnInit() {
     this.initForm();
@@ -62,16 +109,11 @@ export class RepartidorSalesComponent implements OnInit {
   }
 
   initForm() {
-    this.saleForm = this.fb.group({
+    this.checkoutForm = this.fb.group({
       client_name: [''],
       description: [''],
-      payment_method: ['efectivo', Validators.required],
-      items: this.fb.array([], Validators.required)
+      payment_method: ['efectivo', Validators.required]
     });
-  }
-
-  get itemsFormArray() {
-    return this.saleForm.get('items') as FormArray;
   }
 
   async loadSalesData() {
@@ -84,14 +126,11 @@ export class RepartidorSalesComponent implements OnInit {
       this.activeLoad.set(dailyLoad);
 
       if (dailyLoad) {
-        // Cargar ventas de hoy
         const salesList = await this.supabase.getSalesByLoad(dailyLoad.id);
         this.sales.set(salesList);
 
-        // Cargar stock disponible en el camión
         const loadItems = await this.supabase.getDailyLoadItems(dailyLoad.id);
         
-        // Mapear items cargados con lo vendido para calcular lo restante
         const itemsMap: LoadedItem[] = loadItems.map(item => {
           let soldCount = 0;
           salesList.forEach(sale => {
@@ -102,14 +141,20 @@ export class RepartidorSalesComponent implements OnInit {
             });
           });
 
+          // Obtener precios
+          let pOpts = item.products?.price_options || [];
+          let baseP = Number(item.products?.base_price);
+          let allPrices = Array.from(new Set([baseP, ...pOpts])).filter(p => p > 0).sort((a, b) => b - a);
+
           return {
             productId: item.product_id,
             name: item.products?.name,
             unit: item.products?.unit,
-            basePrice: Number(item.products?.base_price),
+            basePrice: baseP,
             loaded: item.quantity_loaded,
             sold: soldCount,
-            remaining: item.quantity_loaded - soldCount
+            remaining: item.quantity_loaded - soldCount,
+            priceOptions: allPrices
           };
         });
 
@@ -122,122 +167,168 @@ export class RepartidorSalesComponent implements OnInit {
     }
   }
 
-  openSaleForm() {
-    this.errorMessage.set(null);
+  // =====================================
+  // FLUJO DE VISTAS
+  // =====================================
+
+  startNewSale() {
+    this.cart.set([]);
     this.initForm();
-    this.addItem(); // Agregar una fila por defecto
-    this.showForm.set(true);
+    this.errorMessage.set(null);
+    this.viewState.set('client');
   }
 
-  closeSaleForm() {
-    this.showForm.set(false);
+  goToCart() {
+    this.viewState.set('cart');
   }
 
-  addItem() {
-    const itemGroup = this.fb.group({
-      product_id: ['', Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      unit_price: [0, [Validators.required, Validators.min(0)]]
+  goToCheckout() {
+    if (this.cartItemsCount() === 0) return;
+    this.viewState.set('checkout');
+  }
+
+  goBackToHistory() {
+    this.viewState.set('history');
+  }
+  
+  goBackToClient() {
+    this.viewState.set('client');
+  }
+
+  goBackToCart() {
+    this.viewState.set('cart');
+  }
+
+  // =====================================
+  // LÓGICA DEL CARRITO (POS)
+  // =====================================
+
+  openProductModal() {
+    this.isProductModalOpen.set(true);
+  }
+
+  closeProductModal() {
+    this.isProductModalOpen.set(false);
+  }
+
+  addToCart(product: LoadedItem) {
+    if (product.remaining <= 0) return;
+
+    this.cart.update(items => {
+      // Contraer todos los demás
+      const mappedItems = items.map(i => ({ ...i, isEditing: false }));
+      
+      const existing = mappedItems.find(i => i.productId === product.productId);
+      if (existing) {
+        if (existing.quantity < existing.maxQuantity) {
+          existing.quantity++;
+        }
+        existing.isEditing = true; // Expandir el existente
+        return [...mappedItems];
+      } else {
+        return [...mappedItems, {
+          productId: product.productId,
+          name: product.name,
+          unit: product.unit,
+          quantity: 1,
+          unitPrice: product.basePrice,
+          maxQuantity: product.remaining,
+          priceOptions: product.priceOptions,
+          customPriceMode: false,
+          isEditing: true // Nuevo ítem se expande
+        }];
+      }
     });
-    this.itemsFormArray.push(itemGroup);
-  }
-
-  removeItem(index: number) {
-    if (this.itemsFormArray.length > 1) {
-      this.itemsFormArray.removeAt(index);
-    }
-  }
-
-  onProductChange(index: number) {
-    const group = this.itemsFormArray.at(index) as FormGroup;
-    const productId = group.get('product_id')?.value;
-    const prod = this.loadedItems().find(p => p.productId === productId);
     
-    if (prod) {
-      group.get('unit_price')?.setValue(prod.basePrice);
-      // Validar cantidad máxima
-      group.get('quantity')?.setValidators([
-        Validators.required, 
-        Validators.min(1), 
-        Validators.max(prod.remaining)
-      ]);
-      group.get('quantity')?.updateValueAndValidity();
-    } else {
-      group.get('unit_price')?.setValue(0);
-      group.get('quantity')?.clearValidators();
-      group.get('quantity')?.setValidators([
-        Validators.required,
-        Validators.min(1)
-      ]);
-      group.get('quantity')?.updateValueAndValidity();
-    }
+    // Cerramos el modal para que vea su carrito actualizado.
+    this.closeProductModal();
   }
 
-  getUnitPrice(index: number): number {
-    const group = this.itemsFormArray.at(index);
-    return group ? (group.get('unit_price')?.value || 0) : 0;
+  editCartItem(productId: string) {
+    this.cart.update(items => {
+      return items.map(item => ({
+        ...item,
+        isEditing: item.productId === productId
+      }));
+    });
   }
 
-  getMaxQuantity(index: number): number {
-    const group = this.itemsFormArray.at(index);
-    const productId = group.get('product_id')?.value;
-    const prod = this.loadedItems().find(p => p.productId === productId);
-    return prod ? prod.remaining : 999;
+  collapseCartItem(productId: string) {
+    this.cart.update(items => {
+      return items.map(item => {
+        if (item.productId === productId) {
+          return { ...item, isEditing: false };
+        }
+        return item;
+      });
+    });
   }
 
-  getSubtotal(index: number): number {
-    const group = this.itemsFormArray.at(index);
-    const quantity = group.get('quantity')?.value || 0;
-    const unitPrice = group.get('unit_price')?.value || 0;
-    return quantity * unitPrice;
+  removeFromCart(productId: string) {
+    this.cart.update(items => {
+      const existing = items.find(i => i.productId === productId);
+      if (existing) {
+        if (existing.quantity > 1) {
+          existing.quantity--;
+          return [...items];
+        } else {
+          return items.filter(i => i.productId !== productId);
+        }
+      }
+      return items;
+    });
   }
 
-  calculateTotalSale(): number {
-    let total = 0;
-    for (let i = 0; i < this.itemsFormArray.length; i++) {
-      total += this.getSubtotal(i);
-    }
-    return total;
+  incrementCartItem(productId: string) {
+    this.cart.update(items => {
+      const existing = items.find(i => i.productId === productId);
+      if (existing) {
+        if (existing.quantity < existing.maxQuantity) {
+          existing.quantity++;
+        }
+      }
+      return [...items];
+    });
   }
 
-  getQuantityValue(index: number): number {
-    const group = this.itemsFormArray.at(index);
-    return group ? (group.get('quantity')?.value || 1) : 1;
+  setCartItemPrice(productId: string, price: number) {
+    this.cart.update(items => {
+      const existing = items.find(i => i.productId === productId);
+      if (existing) {
+        existing.unitPrice = price;
+      }
+      return [...items];
+    });
   }
 
-  incrementQuantity(index: number) {
-    const group = this.itemsFormArray.at(index);
-    if (!group) return;
-    const current = group.get('quantity')?.value || 0;
-    const max = this.getMaxQuantity(index);
-    if (current < max) {
-      group.get('quantity')?.setValue(current + 1);
-      group.get('quantity')?.updateValueAndValidity();
-    }
+  toggleCustomPriceMode(productId: string, state: boolean) {
+    this.cart.update(items => {
+      const existing = items.find(i => i.productId === productId);
+      if (existing) {
+        existing.customPriceMode = state;
+      }
+      return [...items];
+    });
   }
 
-  decrementQuantity(index: number) {
-    const group = this.itemsFormArray.at(index);
-    if (!group) return;
-    const current = group.get('quantity')?.value || 1;
-    if (current > 1) {
-      group.get('quantity')?.setValue(current - 1);
-      group.get('quantity')?.updateValueAndValidity();
-    }
-  }
+  // =====================================
+  // CHECKOUT
+  // =====================================
 
   setPaymentMethod(method: string) {
-    this.saleForm.get('payment_method')?.setValue(method);
+    this.checkoutForm.get('payment_method')?.setValue(method);
   }
 
   async submitSale() {
-    if (this.saleForm.invalid) return;
+    // Validar que haya items, el form sea válido y todos los items tengan precio mayor a 0
+    const hasInvalidPrices = this.cart().some(item => !item.unitPrice || item.unitPrice <= 0);
+    
+    if (this.cartItemsCount() === 0 || this.checkoutForm.invalid || hasInvalidPrices) return;
 
     this.actionLoading.set(true);
     this.errorMessage.set(null);
 
-    const formVal = this.saleForm.value;
-    const items = formVal.items;
+    const formVal = this.checkoutForm.value;
 
     try {
       const repartidorId = this.auth.currentUser()?.id;
@@ -245,36 +336,39 @@ export class RepartidorSalesComponent implements OnInit {
 
       if (!repartidorId || !dailyLoad) throw new Error('No hay jornada activa.');
 
-      // Validaciones adicionales de stock en el cliente
-      items.forEach((item: any) => {
-        const prod = this.loadedItems().find(p => p.productId === item.product_id);
-        if (prod && item.quantity > prod.remaining) {
-          throw new Error('Stock insuficiente para ' + prod.name + '. Llevas ' + prod.remaining + ' y solicitas ' + item.quantity + '.');
+      // Validar stock real
+      this.cart().forEach(cItem => {
+        const prod = this.loadedItems().find(p => p.productId === cItem.productId);
+        if (prod && cItem.quantity > prod.remaining) {
+          throw new Error(`Stock insuficiente para ${prod.name}. Quedan ${prod.remaining}.`);
         }
       });
 
-      // Crear venta
+      const saleItems = this.cart().map(c => ({
+        product_id: c.productId,
+        quantity: c.quantity,
+        unit_price: c.unitPrice
+      }));
+
       await this.supabase.createSale({
         daily_load_id: dailyLoad.id,
         repartidor_id: repartidorId,
         client_name: formVal.client_name || null,
         description: formVal.description || null,
         payment_method: formVal.payment_method
-      }, items);
+      }, saleItems);
 
-      // Guardar información simplificada de éxito para el modal
       this.lastRegisteredSale.set({
         client_name: formVal.client_name || 'Consumidor Final',
         payment_method: formVal.payment_method,
-        total_amount: this.calculateTotalSale(),
-        item_count: items.reduce((acc: number, cur: any) => acc + Number(cur.quantity), 0)
+        total_amount: this.cartTotal(),
+        item_count: this.cartItemsCount()
       });
 
-      // Mostrar modal
       this.showSuccessModal.set(true);
     } catch (e: any) {
       console.error(e);
-      this.errorMessage.set(e.message || 'Error al registrar la venta en la base de datos.');
+      this.errorMessage.set(e.message || 'Error al registrar la venta.');
     } finally {
       this.actionLoading.set(false);
     }
@@ -283,7 +377,7 @@ export class RepartidorSalesComponent implements OnInit {
   closeSuccessModal() {
     this.showSuccessModal.set(false);
     this.lastRegisteredSale.set(null);
-    this.showForm.set(false);
+    this.viewState.set('history');
     this.loadSalesData();
   }
 }

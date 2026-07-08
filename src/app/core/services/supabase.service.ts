@@ -7,12 +7,21 @@ import { environment } from '../../../environments/environment';
 })
 export class SupabaseService {
   public client: SupabaseClient;
+  private adminAuthClient: SupabaseClient;
 
   constructor() {
     this.client = createClient(environment.supabaseUrl, environment.supabaseKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true
+      }
+    });
+
+    // Cliente secundario EXCLUSIVO para crear usuarios sin cerrar la sesión del admin actual
+    this.adminAuthClient = createClient(environment.supabaseUrl, environment.supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
       }
     });
   }
@@ -37,7 +46,7 @@ export class SupabaseService {
     return data;
   }
 
-  async createProduct(product: { name: string; base_price: number; unit: string; is_active: boolean }) {
+  async createProduct(product: { name: string; base_price: number; unit: string; is_active: boolean; price_options?: number[] }) {
     const { data, error } = await this.client
       .from('products')
       .insert(product)
@@ -47,7 +56,7 @@ export class SupabaseService {
     return data;
   }
 
-  async updateProduct(id: string, updates: Partial<{ name: string; base_price: number; unit: string; is_active: boolean }>) {
+  async updateProduct(id: string, updates: Partial<{ name: string; base_price: number; unit: string; is_active: boolean; price_options: number[] }>) {
     const { data, error } = await this.client
       .from('products')
       .update(updates)
@@ -115,7 +124,7 @@ export class SupabaseService {
   async getDailyLoadItems(dailyLoadId: string) {
     const { data, error } = await this.client
       .from('daily_load_items')
-      .select('*, products(name, unit, base_price)')
+      .select('*, products(name, unit, base_price, price_options)')
       .eq('daily_load_id', dailyLoadId);
     if (error) throw error;
     return data;
@@ -195,48 +204,100 @@ export class SupabaseService {
     return data;
   }
 
-  // --- Vistas de Reportes para Administrador ---
-  async getReportSalesByDay() {
+  // --- REPORTES (Admin) ---
+
+  private getUserTimezone(): string {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota';
+  }
+
+  async getReportSalesByDay(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
-      .from('view_sales_by_day')
-      .select('*')
-      .order('date', { ascending: false });
+      .rpc('get_report_sales_by_day', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
     if (error) throw error;
     return data;
   }
 
-  async getReportSalesByRepartidor() {
+  async getReportSalesByRepartidor(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
-      .from('view_sales_by_repartidor')
-      .select('*')
-      .order('total_sales_amount', { ascending: false });
+      .rpc('get_report_sales_by_repartidor', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
     if (error) throw error;
     return data;
   }
 
-  async getReportSalesByProduct() {
+  async getReportSalesByProduct(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
-      .from('view_sales_by_product')
-      .select('*')
-      .order('total_sales_amount', { ascending: false });
+      .rpc('get_report_sales_by_product', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
     if (error) throw error;
     return data;
   }
 
-  async getReportPaymentMethods() {
+  async getReportPaymentMethods(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
-      .from('view_sales_payment_methods')
-      .select('*');
+      .rpc('get_report_payment_methods', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
     if (error) throw error;
     return data;
   }
 
-  async getReportLoadVsSoldVsRemaining(date?: string) {
-    let query = this.client.from('view_load_vs_sold_vs_remaining').select('*');
-    if (date) {
-      query = query.eq('load_date', date);
-    }
-    const { data, error } = await query.order('load_date', { ascending: false });
+  async getReportLoadVsSoldVsRemaining(startDate?: string, endDate?: string) {
+    const { data, error } = await this.client
+      .rpc('get_report_load_vs_sold', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
+    if (error) throw error;
+    return data;
+  }
+
+  // --- Gestión de Usuarios (Admin) ---
+  
+  // 1. Obtener todos los usuarios de forma segura (usa la función RPC)
+  async adminGetUsers() {
+    const { data, error } = await this.client.rpc('admin_get_users');
+    if (error) throw error;
+    return data;
+  }
+
+  // 2. Crear un nuevo usuario (No cierra sesión gracias al adminAuthClient)
+  async adminCreateUser(email: string, password: string, fullName: string, role: 'admin' | 'repartidor') {
+    const { data, error } = await this.adminAuthClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: role
+        }
+      }
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  // 3. Actualizar perfil de un usuario (Nombre, Rol, o Estado)
+  async adminUpdateUserProfile(id: string, updates: Partial<{ full_name: string; role: 'admin' | 'repartidor'; is_active: boolean }>) {
+    const { data, error } = await this.client
+      .from('profiles')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
     if (error) throw error;
     return data;
   }
