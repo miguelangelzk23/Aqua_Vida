@@ -164,23 +164,23 @@
                     <!-- Cantidad con botones grandes - y + -->
                     <div>
                       <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Cantidad</label>
-                      <div class="flex items-center space-x-1">
+                      <div class="flex items-center space-x-1.5">
                         <button 
                           type="button"
                           (click)="decrementQuantity($index)"
                           [disabled]="getQuantityValue($index) <= 1"
-                          class="w-10 h-10 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-base"
+                          class="w-12 h-12 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-lg shadow-sm"
                         >
                           -
                         </button>
-                        <span class="w-8 text-center text-sm font-black text-slate-800 select-none">
+                        <span class="w-8 text-center text-sm font-black text-slate-850 select-none">
                           {{ getQuantityValue($index) }}
                         </span>
                         <button 
                           type="button"
                           (click)="incrementQuantity($index)"
                           [disabled]="getQuantityValue($index) >= getMaxQuantity($index)"
-                          class="w-10 h-10 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-base"
+                          class="w-12 h-12 bg-white border border-slate-250 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all text-lg shadow-sm"
                         >
                           +
                         </button>
@@ -189,17 +189,26 @@
                     </div>
 
                     <!-- Precio y Subtotal -->
-                    <div class="text-right flex flex-col justify-end space-y-0.5">
-                      <span class="text-[10px] font-bold text-slate-400 block uppercase">
-                        Precio: &#36;{{ getUnitPrice($index) | number:'1.0-0' }}
-                      </span>
-                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                        Subtotal
-                      </span>
-                      <span class="text-base font-black text-blue-600 block leading-tight">
-                        &#36;{{ getSubtotal($index) | number:'1.0-0' }}
-                      </span>
-                      <input type="hidden" formControlName="unit_price" />
+                    <div class="text-right flex flex-col items-end space-y-1.5">
+                      <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Precio Unitario</label>
+                        <div class="relative flex items-center">
+                          <span class="absolute left-2.5 text-xs font-bold text-slate-400 select-none">$</span>
+                          <input 
+                            type="number" 
+                            formControlName="unit_price" 
+                            class="w-28 pl-6 pr-2 py-2 bg-white border border-slate-250 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-right"
+                            min="0"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <div class="pt-0.5">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Subtotal</span>
+                        <span class="text-base font-black text-blue-600 block leading-tight">
+                          &#36;{{ getSubtotal($index) | number:'1.0-0' }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -251,7 +260,20 @@
               <div class="flex items-center justify-between">
                 <div>
                   <span class="block text-sm font-bold text-slate-800">{{ sale.client_name || 'Consumidor Final' }}</span>
-                  <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">{{ sale.sale_date | date:'shortTime' }} • {{ sale.payment_method }}</span>
+                  <div class="flex items-center space-x-1.5 mt-0.5">
+                    <span class="text-xs text-slate-400 font-semibold">{{ sale.sale_date | date:'shortTime' }}</span>
+                    <span class="text-slate-300">•</span>
+                    <span 
+                      [class]="{
+                        'bg-emerald-50 text-emerald-600 border border-emerald-100': sale.payment_method === 'efectivo',
+                        'bg-blue-50 text-blue-600 border border-blue-150': sale.payment_method === 'transferencia',
+                        'bg-slate-100 text-slate-600 border border-slate-200': sale.payment_method === 'otro'
+                      }"
+                      class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border"
+                    >
+                      {{ sale.payment_method }}
+                    </span>
+                  </div>
                 </div>
                 <span class="text-base font-bold text-slate-900">&#36;{{ sale.total_amount | number:'1.2-2' }}</span>
               </div>

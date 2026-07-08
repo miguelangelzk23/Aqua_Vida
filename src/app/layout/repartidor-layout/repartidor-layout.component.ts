@@ -53,35 +53,33 @@ import { CommonModule } from '@angular/common';
       </main>
 
       <!-- Bottom Navigation Bar (Fijada abajo) -->
-      <nav class="fixed bottom-0 left-0 right-0 z-30 h-18 bg-white border-t border-slate-200 shadow-2xl flex items-center justify-around px-2 pb-safe">
+      <nav class="fixed bottom-0 left-0 right-0 z-30 h-18 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-2xl flex items-center justify-around px-4 pb-safe">
         <a 
           routerLink="/repartidor/dashboard" 
-          routerLinkActive="!text-blue-600 font-extrabold"
+          routerLinkActive="text-blue-600 bg-blue-50/80 font-black"
           [routerLinkActiveOptions]="{exact: true}"
-          class="flex flex-col items-center justify-center flex-1 py-2 text-slate-400 transition-colors"
+          class="flex flex-col items-center justify-center py-2 px-4 rounded-2xl text-slate-400 hover:text-slate-655 active:scale-95 transition-all duration-200"
         >
-          <svg lucideLayoutDashboard class="w-6 h-6 mb-1"></svg>
-          <span class="text-[10px] tracking-wide uppercase font-semibold">Mi Jornada</span>
+          <svg lucideLayoutDashboard class="w-5.5 h-5.5 mb-0.5"></svg>
+          <span class="text-[9px] tracking-wider uppercase font-bold">Mi Jornada</span>
         </a>
 
         <a 
           routerLink="/repartidor/sales" 
-          routerLinkActive="!text-blue-600 font-extrabold"
-          class="flex flex-col items-center justify-center flex-1 py-2 text-slate-400 transition-colors"
+          routerLinkActive="text-blue-600 bg-blue-50/80 font-black"
+          class="flex flex-col items-center justify-center py-2 px-4 rounded-2xl text-slate-400 hover:text-slate-655 active:scale-95 transition-all duration-200"
         >
-          <div class="relative flex flex-col items-center">
-            <svg lucideShoppingCart class="w-6 h-6 mb-1"></svg>
-            <span class="text-[10px] tracking-wide uppercase font-semibold">Ventas</span>
-          </div>
+          <svg lucideShoppingCart class="w-5.5 h-5.5 mb-0.5"></svg>
+          <span class="text-[9px] tracking-wider uppercase font-bold">Ventas</span>
         </a>
 
         <a 
           routerLink="/repartidor/closure" 
-          routerLinkActive="!text-blue-600 font-extrabold"
-          class="flex flex-col items-center justify-center flex-1 py-2 text-slate-400 transition-colors"
+          routerLinkActive="text-blue-600 bg-blue-50/80 font-black"
+          class="flex flex-col items-center justify-center py-2 px-4 rounded-2xl text-slate-400 hover:text-slate-655 active:scale-95 transition-all duration-200"
         >
-          <svg lucideClipboardCheck class="w-6 h-6 mb-1"></svg>
-          <span class="text-[10px] tracking-wide uppercase font-semibold">Cerrar Día</span>
+          <svg lucideClipboardCheck class="w-5.5 h-5.5 mb-0.5"></svg>
+          <span class="text-[9px] tracking-wider uppercase font-bold">Cerrar Día</span>
         </a>
       </nav>
     </div>

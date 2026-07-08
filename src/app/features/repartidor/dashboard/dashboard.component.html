@@ -77,23 +77,23 @@
                 </div>
                 
                 <!-- Selector Táctil - / + -->
-                <div class="flex items-center space-x-1.5 shrink-0">
+                <div class="flex items-center space-x-2 shrink-0">
                   <button 
                     type="button"
                     (click)="decrementLoad(prod.id)"
                     [disabled]="getLoadQuantity(prod.id) <= 0"
-                    class="w-9 h-9 bg-white border border-slate-200 text-slate-700 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
+                    class="w-11 h-11 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black text-lg shadow-sm active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
                   >
                     -
                   </button>
-                  <span class="w-8 text-center text-xs font-black text-slate-800 select-none">
+                  <span class="w-8 text-center text-sm font-black text-slate-850 select-none">
                     {{ getLoadQuantity(prod.id) }}
                   </span>
                   <button 
                     type="button"
                     (click)="incrementLoad(prod.id)"
                     [disabled]="getLoadQuantity(prod.id) >= getProductStock(prod.id)"
-                    class="w-9 h-9 bg-white border border-slate-200 text-slate-700 rounded-xl flex items-center justify-center font-black active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
+                    class="w-11 h-11 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black text-lg shadow-sm active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
                   >
                     +
                   </button>
@@ -146,25 +146,42 @@
 
         <div class="divide-y divide-slate-100">
           @for (item of mobileInventory(); track item.id) {
-            <div class="py-3.5 flex items-center justify-between">
-              <div>
-                <h4 class="text-xs font-black text-slate-800 leading-tight">{{ item.name }}</h4>
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">{{ item.unit }}</span>
+            <div class="py-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-black text-slate-800 leading-tight">{{ item.name }}</h4>
+                  <span class="text-[10px] text-slate-450 font-bold uppercase tracking-wider">{{ item.unit }}</span>
+                </div>
+                <div class="flex space-x-2.5 text-right shrink-0">
+                  <div class="bg-slate-50 px-2 py-1 rounded-xl border border-slate-150">
+                    <span class="block text-[8px] text-slate-400 font-bold uppercase">Cargado</span>
+                    <span class="block text-xs font-bold text-slate-700">{{ item.loaded }}</span>
+                  </div>
+                  <div class="bg-blue-50 px-2 py-1 rounded-xl border border-blue-100">
+                    <span class="block text-[8px] text-blue-500 font-bold uppercase">Vendido</span>
+                    <span class="block text-xs font-bold text-blue-600">{{ item.sold }}</span>
+                  </div>
+                  <div class="bg-slate-900 px-2.5 py-1 rounded-xl text-white shadow-sm">
+                    <span class="block text-[8px] text-cyan-300 font-bold uppercase font-extrabold">Resto</span>
+                    <span class="block text-xs font-black text-cyan-200">{{ item.remaining }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="flex space-x-4 text-right">
-                <div class="bg-slate-50 px-2 py-1 rounded-xl border border-slate-100">
-                  <span class="block text-[8px] text-slate-400 font-bold uppercase">Carga</span>
-                  <span class="block text-xs font-bold text-slate-700">{{ item.loaded }}</span>
+              <!-- Progreso de Ventas -->
+              @if (item.loaded > 0) {
+                <div class="space-y-1">
+                  <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-100 shadow-inner">
+                    <div 
+                      class="bg-gradient-to-r from-blue-500 to-indigo-650 h-full rounded-full transition-all duration-500" 
+                      [style.width.%]="(item.sold / item.loaded) * 100"
+                    ></div>
+                  </div>
+                  <div class="flex justify-between text-[9px] font-extrabold text-slate-400 uppercase tracking-wide">
+                    <span>Progreso de Ruta</span>
+                    <span class="text-blue-600">{{ ((item.sold / item.loaded) * 100) | number:'1.0-0' }}%</span>
+                  </div>
                 </div>
-                <div class="bg-blue-50 px-2 py-1 rounded-xl border border-blue-50">
-                  <span class="block text-[8px] text-blue-400 font-bold uppercase">Venta</span>
-                  <span class="block text-xs font-bold text-blue-600">{{ item.sold }}</span>
-                </div>
-                <div class="bg-slate-900 px-2.5 py-1 rounded-xl text-white">
-                  <span class="block text-[8px] text-cyan-400 font-bold uppercase">Resto</span>
-                  <span class="block text-xs font-extrabold">{{ item.remaining }}</span>
-                </div>
-              </div>
+              }
             </div>
           }
         </div>
