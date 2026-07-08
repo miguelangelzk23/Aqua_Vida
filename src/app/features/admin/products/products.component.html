@@ -1,23 +1,23 @@
 <div class="space-y-8">
   
   <!-- Encabezado -->
-  <div class="flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <div class="p-3 bg-cyan-100 text-cyan-600 rounded-2xl">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-start sm:items-center space-x-4">
+      <div class="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-2xl shadow-md shrink-0">
         <svg lucideShoppingBag class="w-6 h-6"></svg>
       </div>
       <div>
-        <h2 class="text-xl font-bold text-slate-800">Catálogo de Productos</h2>
-        <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Gestión de productos y precios base de venta</p>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Catálogo de Productos</h2>
+        <p class="text-sm text-slate-500 font-medium mt-0.5">Gestión de productos y precios de venta</p>
       </div>
     </div>
     
     @if (!showForm()) {
       <button 
         (click)="openAddForm()"
-        class="px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm rounded-xl shadow-md flex items-center space-x-1.5 active:scale-95 transition-all cursor-pointer"
+        class="w-full sm:w-auto px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-2xl shadow-md flex items-center justify-center space-x-2 active:scale-95 transition-all cursor-pointer"
       >
-        <svg lucidePlus class="w-4 h-4"></svg>
+        <svg lucidePlus class="w-4.5 h-4.5"></svg>
         <span>Agregar Producto</span>
       </button>
     }
@@ -31,18 +31,72 @@
     </div>
   } @else {
     
-    <!-- Tabla de Productos (Ocupa ancho completo) -->
-    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+    <!-- Lista de Productos (Desktop Table / Mobile Cards) -->
+    <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
       <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-3">Lista de Productos</h3>
       
-      <div class="overflow-x-auto -mx-6 sm:mx-0">
-        <div class="inline-block min-w-full align-middle px-6 sm:px-0">
+      <!-- Vista de Tarjetas para Móviles (< md) -->
+      <div class="grid grid-cols-1 gap-4 md:hidden">
+        @for (prod of products(); track prod.id) {
+          <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm relative space-y-3">
+            
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-slate-800 text-base leading-tight">{{ prod.name }}</h4>
+                <p class="text-xs text-slate-500 font-medium mt-0.5">{{ prod.unit }}</p>
+              </div>
+              <button 
+                (click)="openEditForm(prod)"
+                class="p-2 -mt-1 -mr-1 text-slate-400 hover:text-cyan-600 bg-slate-50 hover:bg-cyan-50 rounded-xl transition-all cursor-pointer"
+                title="Editar"
+              >
+                <svg lucideEdit3 class="w-4.5 h-4.5"></svg>
+              </button>
+            </div>
+
+            <!-- Precios -->
+            <div>
+              <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Precios ($)</span>
+              <div class="flex flex-wrap gap-1.5">
+                @for (price of prod.price_options; track price) {
+                  <span class="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg border border-slate-200">
+                    &#36;{{ price | number:'1.0-0' }}
+                  </span>
+                } @empty {
+                  <span class="text-xs text-slate-400 italic">Sin precios asignados</span>
+                }
+              </div>
+            </div>
+
+            <!-- Estado y Acciones -->
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-500">Estado del producto:</span>
+              <button 
+                (click)="toggleProductStatus(prod)"
+                [disabled]="actionLoading()"
+                [class]="prod.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-200'"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 disabled:opacity-50 transition-all shadow-sm"
+              >
+                {{ prod.is_active ? 'Activo' : 'Inactivo' }}
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="text-center py-8 text-slate-400 font-medium bg-slate-50 rounded-2xl border border-slate-100">
+            No hay productos registrados en el catálogo.
+          </div>
+        }
+      </div>
+
+      <!-- Vista de Tabla para Escritorio (>= md) -->
+      <div class="hidden md:block overflow-x-auto">
+        <div class="inline-block min-w-full align-middle">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
                 <th class="py-3 pr-4">Nombre del Producto</th>
                 <th class="py-3 px-4">Unidad</th>
-                <th class="py-3 px-4">Precio Base</th>
+                <th class="py-3 px-4">Precios ($)</th>
                 <th class="py-3 px-4 text-center">Estado</th>
                 <th class="py-3 pl-4 text-right">Acciones</th>
               </tr>
@@ -52,7 +106,17 @@
                 <tr class="hover:bg-slate-50/50 transition-all">
                   <td class="py-4 pr-4 font-bold text-slate-800">{{ prod.name }}</td>
                   <td class="py-4 px-4 font-semibold text-slate-500">{{ prod.unit }}</td>
-                  <td class="py-4 px-4 font-bold text-slate-700">&#36;{{ prod.base_price | number:'1.2-2' }}</td>
+                  <td class="py-4 px-4">
+                    <div class="flex flex-wrap gap-1">
+                      @for (price of prod.price_options; track price) {
+                        <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">
+                          &#36;{{ price | number:'1.0-0' }}
+                        </span>
+                      } @empty {
+                        <span class="text-xs text-slate-400 italic">Sin precios</span>
+                      }
+                    </div>
+                  </td>
                   <td class="py-4 px-4 text-center">
                     <button 
                       (click)="toggleProductStatus(prod)"
@@ -84,10 +148,10 @@
       </div>
     </div>
 
-    <!-- Modal de Formulario Agregar / Editar (Premium Overlay) -->
+    <!-- Modal de Formulario Agregar / Editar (Premium Overlay / Bottom Sheet en Móvil) -->
     @if (showForm()) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-5 transform transition-all duration-300 scale-100 animate-slideUp">
+      <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+        <div class="bg-white w-full max-w-md rounded-t-[2rem] sm:rounded-3xl p-6 pb-10 sm:pb-6 shadow-2xl space-y-5 transform transition-all duration-300 translate-y-0 sm:scale-100 animate-slideUp max-h-[90vh] overflow-y-auto">
           
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 class="font-bold text-slate-800 text-base">
@@ -133,18 +197,39 @@
               }
             </div>
 
-            <!-- Precio Base -->
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Precio de Venta Base ($)</label>
-              <input 
-                type="number" 
-                formControlName="base_price"
-                placeholder="0.00"
-                min="0"
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm font-bold transition-all shadow-inner"
-              />
-              @if (productForm.get('base_price')?.touched && productForm.get('base_price')?.invalid) {
-                <span class="text-xs text-red-400 mt-1 block">Ingresa un precio válido (mayor o igual a 0).</span>
+            <!-- Opciones de Precio -->
+            <div formArrayName="price_options" class="space-y-2">
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Opciones de Precios Frecuentes</label>
+                <button 
+                  type="button" 
+                  (click)="addPriceOption()"
+                  class="text-[11px] sm:text-[10px] font-bold text-cyan-600 hover:text-cyan-700 uppercase tracking-wider flex items-center gap-1 cursor-pointer bg-cyan-50 px-2.5 py-1.5 rounded-lg active:scale-95 transition-all"
+                >
+                  <svg lucidePlus class="w-3.5 h-3.5"></svg> Añadir Precio
+                </button>
+              </div>
+
+              @for (control of priceOptionsArray.controls; track $index) {
+                <div class="flex items-center gap-2">
+                  <div class="relative flex-1">
+                    <span class="absolute left-3 top-3 text-xs font-bold text-slate-400 select-none">$</span>
+                    <input 
+                      type="text" 
+                      [formControlName]="$index"
+                      (input)="formatCurrency($event, $index)"
+                      placeholder="Ej. 15.000"
+                      class="w-full pl-7 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm font-semibold transition-all shadow-inner"
+                    />
+                  </div>
+                  <button 
+                    type="button" 
+                    (click)="removePriceOption($index)"
+                    class="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <svg lucideTrash2 class="w-4.5 h-4.5"></svg>
+                  </button>
+                </div>
               }
             </div>
 

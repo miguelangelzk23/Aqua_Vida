@@ -5,8 +5,7 @@ import {
   LucideLayoutDashboard, 
   LucideShoppingCart, 
   LucideClipboardCheck, 
-  LucideLogOut, 
-  LucideUser
+  LucideLogOut
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 
@@ -21,8 +20,7 @@ import { CommonModule } from '@angular/common';
     LucideLayoutDashboard,
     LucideShoppingCart,
     LucideClipboardCheck,
-    LucideLogOut,
-    LucideUser
+    LucideLogOut
   ],
   template: `
     <div class="min-h-screen flex flex-col bg-slate-50 text-slate-800 pb-20">

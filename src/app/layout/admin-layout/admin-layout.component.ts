@@ -8,6 +8,7 @@ import {
   LucideBarChart3, 
   LucideLogOut, 
   LucideUser,
+  LucideUsers,
   LucideMenu,
   LucideX
 } from '@lucide/angular';
@@ -27,6 +28,7 @@ import { CommonModule } from '@angular/common';
     LucideBarChart3,
     LucideLogOut,
     LucideUser,
+    LucideUsers,
     LucideMenu,
     LucideX
   ],
@@ -91,6 +93,15 @@ import { CommonModule } from '@angular/common';
             >
               <svg lucideBarChart3 class="w-5 h-5 group-hover:scale-105 transition-transform"></svg>
               <span>Reportes & Comparativa</span>
+            </a>
+            <a 
+              routerLink="/admin/users" 
+              routerLinkActive="bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/10 font-bold"
+              (click)="closeMobileMenu()"
+              class="flex items-center space-x-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+            >
+              <svg lucideUsers class="w-5 h-5 group-hover:scale-105 transition-transform"></svg>
+              <span>Gestión de Personal</span>
             </a>
           </nav>
         </div>

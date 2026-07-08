@@ -6,10 +6,11 @@ import {
   LucideCheck, 
   LucideX, 
   LucideAlertCircle,
-  LucideShoppingBag
+  LucideShoppingBag,
+  LucideTrash2
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule, FormArray, FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-admin-products',
@@ -21,7 +22,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
     LucidePlus, 
     LucideEdit3, 
     LucideX, 
-    LucideShoppingBag
+    LucideShoppingBag,
+    LucideTrash2
   ],
   templateUrl: './products.component.html'
 })
@@ -48,9 +50,31 @@ export class AdminProductsComponent implements OnInit {
     this.productForm = this.fb.group({
       name: ['', Validators.required],
       unit: ['', Validators.required],
-      base_price: [0, [Validators.required, Validators.min(0)]],
-      is_active: [true]
+      base_price: [0], // Default 0
+      is_active: [true],
+      price_options: this.fb.array([])
     });
+    this.addPriceOption();
+  }
+
+  get priceOptionsArray(): FormArray {
+    return this.productForm.get('price_options') as FormArray;
+  }
+
+  addPriceOption(value: string = '') {
+    this.priceOptionsArray.push(new FormControl(value));
+  }
+
+  removePriceOption(index: number) {
+    this.priceOptionsArray.removeAt(index);
+  }
+
+  formatCurrency(event: any, index: number) {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value) {
+      value = new Intl.NumberFormat('es-CO').format(Number(value));
+    }
+    this.priceOptionsArray.at(index).setValue(value, { emitEvent: false });
   }
 
   async loadProducts() {
@@ -77,12 +101,22 @@ export class AdminProductsComponent implements OnInit {
     this.errorMessage.set(null);
     this.isEditMode.set(true);
     this.selectedProductId = product.id;
-    this.productForm.setValue({
+    this.productForm.patchValue({
       name: product.name,
       unit: product.unit,
       base_price: product.base_price,
       is_active: product.is_active
     });
+    
+    this.priceOptionsArray.clear();
+    if (product.price_options && product.price_options.length > 0) {
+      product.price_options.forEach((price: number) => {
+        this.addPriceOption(new Intl.NumberFormat('es-CO').format(price));
+      });
+    } else {
+      this.addPriceOption();
+    }
+    
     this.showForm.set(true);
   }
 
@@ -96,7 +130,22 @@ export class AdminProductsComponent implements OnInit {
     this.actionLoading.set(true);
     this.errorMessage.set(null);
 
-    const val = this.productForm.value;
+    const formVal = this.productForm.value;
+
+    let parsedOptions: number[] = [];
+    if (formVal.price_options && formVal.price_options.length > 0) {
+      parsedOptions = formVal.price_options
+        .map((o: string) => o ? Number(o.replace(/\D/g, '')) : 0)
+        .filter((o: number) => !isNaN(o) && o > 0);
+    }
+
+    const val = {
+      name: formVal.name,
+      unit: formVal.unit,
+      base_price: 0,
+      is_active: formVal.is_active,
+      price_options: parsedOptions
+    };
 
     try {
       if (this.isEditMode()) {
