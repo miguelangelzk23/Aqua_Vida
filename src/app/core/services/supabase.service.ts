@@ -2,6 +2,49 @@ import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
+const idbStorage = {
+  async getItem(key: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('SupabaseAuth', 1);
+      request.onupgradeneeded = (e: any) => e.target.result.createObjectStore('auth');
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const transaction = db.transaction('auth', 'readonly');
+        const store = transaction.objectStore('auth');
+        const getReq = store.get(key);
+        getReq.onsuccess = () => resolve(getReq.result || null);
+        getReq.onerror = () => resolve(null);
+      };
+      request.onerror = () => resolve(null);
+    });
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('SupabaseAuth', 1);
+      request.onupgradeneeded = (e: any) => e.target.result.createObjectStore('auth');
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const transaction = db.transaction('auth', 'readwrite');
+        const store = transaction.objectStore('auth');
+        store.put(value, key);
+        transaction.oncomplete = () => resolve();
+      };
+    });
+  },
+  async removeItem(key: string): Promise<void> {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('SupabaseAuth', 1);
+      request.onsuccess = (e: any) => {
+        const db = e.target.result;
+        const transaction = db.transaction('auth', 'readwrite');
+        const store = transaction.objectStore('auth');
+        store.delete(key);
+        transaction.oncomplete = () => resolve();
+      };
+    });
+  }
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -14,8 +57,8 @@ export class SupabaseService {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        storage: window.localStorage,
-        storageKey: 'aqua-vida-auth-token'
+        storage: idbStorage,
+        storageKey: 'aqua-vida-auth-token-idb'
       }
     });
 
