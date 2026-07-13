@@ -41,10 +41,18 @@ export class AuthService {
 
     // Escuchar cambios de autenticación
     this.supabase.client.auth.onAuthStateChange(async (event, session) => {
+      // Ignoramos INITIAL_SESSION porque ya lo manejamos arriba con getSession()
+      if (event === 'INITIAL_SESSION') return;
+
       if (session?.user) {
-        await this.fetchProfile(session.user.id);
-      } else {
+        // Solo recargamos el perfil si no estábamos autenticados o si cambió el usuario
+        if (!this.currentUser() || this.currentUser()?.id !== session.user.id) {
+          await this.fetchProfile(session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // Solo redirigimos a login si es un evento explícito de cierre de sesión
         this.currentUser.set(null);
+        localStorage.removeItem('aqua-vida-profile');
         this.router.navigate(['/login']);
       }
     });

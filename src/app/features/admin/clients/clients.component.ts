@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../core/services/supabase.service';
-import { LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle } from '@lucide/angular';
+import { LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle, LucideMessageCircle } from '@lucide/angular';
 
 @Component({
   selector: 'app-admin-clients',
   standalone: true,
-  imports: [CommonModule, LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle],
+  imports: [CommonModule, LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle, LucideMessageCircle],
   templateUrl: './clients.component.html'
 })
 export class ClientsComponent implements OnInit {
@@ -32,5 +32,13 @@ export class ClientsComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  sendWhatsApp(client: any) {
+    if (!client.phone) return;
+    const phone = client.phone.startsWith('57') ? client.phone : `57${client.phone}`;
+    const message = `Hola ${client.name}, te escribimos de Aqua Vida. ¿Deseas hacer un pedido de agua hoy?`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   }
 }
