@@ -150,7 +150,7 @@ export class SupabaseService {
     return data;
   }
 
-  async createSale(sale: { daily_load_id: string; repartidor_id: string; client_name?: string; description?: string; payment_method: string }, items: { product_id: string; quantity: number; unit_price: number }[]) {
+  async createSale(sale: { daily_load_id: string; repartidor_id: string; client_id?: string | null; client_name?: string; description?: string; payment_method: string }, items: { product_id: string; quantity: number; unit_price: number }[]) {
     // Iniciamos una transacción simulada usando el cliente Supabase
     // Dado que Supabase JS no tiene transacciones complejas en cliente sin funciones, podemos insertar la venta principal 
     // y luego sus items. Si falla, manejamos el error. Nuestro disparador de stock móvil se ejecutará al insertar los items.
@@ -298,6 +298,41 @@ export class SupabaseService {
       .eq('id', id)
       .select()
       .single();
+    if (error) throw error;
+    return data;
+  }
+
+  // --- Módulo de Clientes ---
+
+  // 1. Buscar clientes por teléfono (autocompletado interactivo)
+  async searchClientsByPhone(searchTerm: string) {
+    if (!searchTerm || searchTerm.length < 3) return [];
+    const { data, error } = await this.client
+      .from('clients')
+      .select('id, name, phone, address')
+      .ilike('phone', `%${searchTerm}%`)
+      .limit(5);
+    if (error) throw error;
+    return data;
+  }
+
+  // 2. Crear un nuevo cliente (durante la venta o manual)
+  async createClient(client: { phone: string; name: string; address?: string }) {
+    const { data, error } = await this.client
+      .from('clients')
+      .insert(client)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  // 3. Obtener estadísticas de clientes (Módulo Administrador)
+  async getClientStats() {
+    const { data, error } = await this.client
+      .from('client_stats')
+      .select('*')
+      .order('days_since_last_purchase', { ascending: false, nullsFirst: false });
     if (error) throw error;
     return data;
   }
