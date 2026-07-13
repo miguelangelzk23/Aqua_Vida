@@ -59,12 +59,26 @@ export class AuthService {
         .single();
       
       if (error || !data) {
-        this.currentUser.set(null);
+        // En caso de error (ej. sin internet), intentamos cargar del caché local
+        const cached = localStorage.getItem('aqua-vida-profile');
+        if (cached) {
+          this.currentUser.set(JSON.parse(cached));
+        } else {
+          this.currentUser.set(null);
+        }
       } else {
+        // Guardamos en caché para uso offline
+        localStorage.setItem('aqua-vida-profile', JSON.stringify(data));
         this.currentUser.set(data as Profile);
       }
     } catch (e) {
-      this.currentUser.set(null);
+      // En caso de error de red, cargar de caché
+      const cached = localStorage.getItem('aqua-vida-profile');
+      if (cached) {
+        this.currentUser.set(JSON.parse(cached));
+      } else {
+        this.currentUser.set(null);
+      }
     } finally {
       this.loading.set(false);
     }
@@ -100,6 +114,7 @@ export class AuthService {
   async logout() {
     this.loading.set(true);
     await this.supabase.client.auth.signOut();
+    localStorage.removeItem('aqua-vida-profile');
     this.currentUser.set(null);
     this.loading.set(false);
     this.router.navigate(['/login']);
