@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { LucideMail, LucideLock, LucideLogIn } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -98,9 +99,10 @@ import { CommonModule } from '@angular/common';
     </div>
   `
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   public auth = inject(AuthService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   loginForm: FormGroup;
   errorMessage = signal<string | null>(null);
@@ -110,6 +112,22 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(5)]]
     });
+  }
+
+  ngOnInit() {
+    // Si ya hay sesión activa al entrar a esta ruta, redirigir automáticamente
+    const checkAuth = () => {
+      if (this.auth.loading()) {
+        setTimeout(checkAuth, 50);
+      } else if (this.auth.isAuthenticated()) {
+        if (this.auth.isAdmin()) {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/repartidor']);
+        }
+      }
+    };
+    checkAuth();
   }
 
   async onSubmit() {
