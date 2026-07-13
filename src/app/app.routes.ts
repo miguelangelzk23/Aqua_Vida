@@ -32,6 +32,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/users/users.component').then(c => c.AdminUsersComponent)
       },
       {
+        path: 'clients',
+        loadComponent: () => import('./features/admin/clients/clients.component').then(c => c.ClientsComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

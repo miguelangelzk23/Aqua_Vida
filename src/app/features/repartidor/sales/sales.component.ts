@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { 
@@ -17,6 +17,8 @@ import {
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 interface LoadedItem {
   productId: string;
@@ -67,6 +69,7 @@ export class RepartidorSalesComponent implements OnInit {
   private supabase = inject(SupabaseService);
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
+  private destroyRef = inject(DestroyRef);
 
   // Estados de UI
   loading = signal<boolean>(true);
@@ -90,6 +93,11 @@ export class RepartidorSalesComponent implements OnInit {
 
   checkoutForm!: FormGroup;
 
+  // Clientes
+  clientSearchResults = signal<any[]>([]);
+  isSearchingClient = signal<boolean>(false);
+  selectedClient = signal<any>(null);
+
   // Calculados
   cartTotal = computed(() => {
     return this.cart().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -110,10 +118,50 @@ export class RepartidorSalesComponent implements OnInit {
 
   initForm() {
     this.checkoutForm = this.fb.group({
+      client_id: [null],
+      client_phone: ['', [Validators.pattern('^[0-9]{10}$')]],
       client_name: [''],
-      description: [''],
+      description: [''], // Dirección o referencia
       payment_method: ['efectivo', Validators.required]
     });
+
+    // Auto-búsqueda de clientes al digitar teléfono
+    this.checkoutForm.get('client_phone')?.valueChanges.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(async (phone) => {
+      // Si el teléfono cambia, deseleccionamos el cliente actual
+      if (this.selectedClient() && this.selectedClient().phone !== phone) {
+        this.selectedClient.set(null);
+        this.checkoutForm.patchValue({ client_id: null }, { emitEvent: false });
+      }
+
+      if (phone && phone.length >= 3) {
+        this.isSearchingClient.set(true);
+        try {
+          const results = await this.supabase.searchClientsByPhone(phone);
+          this.clientSearchResults.set(results || []);
+        } catch (e) {
+          console.error('Error buscando cliente:', e);
+        } finally {
+          this.isSearchingClient.set(false);
+        }
+      } else {
+        this.clientSearchResults.set([]);
+      }
+    });
+  }
+
+  selectClient(client: any) {
+    this.selectedClient.set(client);
+    this.checkoutForm.patchValue({
+      client_id: client.id,
+      client_phone: client.phone,
+      client_name: client.name,
+      description: client.address
+    });
+    this.clientSearchResults.set([]);
   }
 
   async loadSalesData() {
@@ -173,6 +221,8 @@ export class RepartidorSalesComponent implements OnInit {
 
   startNewSale() {
     this.cart.set([]);
+    this.selectedClient.set(null);
+    this.clientSearchResults.set([]);
     this.initForm();
     this.errorMessage.set(null);
     this.viewState.set('client');
@@ -350,9 +400,26 @@ export class RepartidorSalesComponent implements OnInit {
         unit_price: c.unitPrice
       }));
 
+      let clientId = formVal.client_id;
+      
+      // Si hay teléfono pero no hay ID de cliente, significa que es un cliente nuevo. Lo creamos.
+      if (formVal.client_phone && !clientId) {
+        try {
+          const newClient = await this.supabase.createClient({
+            phone: formVal.client_phone,
+            name: formVal.client_name || 'Sin Nombre',
+            address: formVal.description || null
+          });
+          clientId = newClient.id;
+        } catch (clientErr) {
+          console.warn('No se pudo crear el cliente, continuando sin él.', clientErr);
+        }
+      }
+
       await this.supabase.createSale({
         daily_load_id: dailyLoad.id,
         repartidor_id: repartidorId,
+        client_id: clientId || null,
         client_name: formVal.client_name || null,
         description: formVal.description || null,
         payment_method: formVal.payment_method
