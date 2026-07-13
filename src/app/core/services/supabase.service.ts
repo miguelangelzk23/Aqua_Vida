@@ -13,7 +13,9 @@ export class SupabaseService {
     this.client = createClient(environment.supabaseUrl, environment.supabaseKey, {
       auth: {
         persistSession: true,
-        autoRefreshToken: true
+        autoRefreshToken: true,
+        storage: window.localStorage,
+        storageKey: 'aqua-vida-auth-token'
       }
     });
 

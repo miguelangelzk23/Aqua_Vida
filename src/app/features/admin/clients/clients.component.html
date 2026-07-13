@@ -38,6 +38,7 @@
               <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Contacto</th>
               <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider text-center">Compras</th>
               <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Retención</th>
+              <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
@@ -84,10 +85,19 @@
                     </span>
                   }
                 </td>
+                <td class="px-6 py-4 text-right">
+                  <button 
+                    (click)="sendWhatsApp(client)"
+                    class="inline-flex items-center justify-center p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm active:scale-95 group/btn"
+                    title="Enviar mensaje por WhatsApp"
+                  >
+                    <svg lucideMessageCircle class="w-5 h-5 group-hover/btn:scale-110 transition-transform"></svg>
+                  </button>
+                </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="px-6 py-16 text-center">
+                <td colspan="5" class="px-6 py-16 text-center">
                   <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
                     <svg lucideUsers class="w-8 h-8 text-slate-300"></svg>
                   </div>

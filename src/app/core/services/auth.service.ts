@@ -41,10 +41,18 @@ export class AuthService {
 
     // Escuchar cambios de autenticación
     this.supabase.client.auth.onAuthStateChange(async (event, session) => {
+      // Ignoramos INITIAL_SESSION porque ya lo manejamos arriba con getSession()
+      if (event === 'INITIAL_SESSION') return;
+
       if (session?.user) {
-        await this.fetchProfile(session.user.id);
-      } else {
+        // Solo recargamos el perfil si no estábamos autenticados o si cambió el usuario
+        if (!this.currentUser() || this.currentUser()?.id !== session.user.id) {
+          await this.fetchProfile(session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // Solo redirigimos a login si es un evento explícito de cierre de sesión
         this.currentUser.set(null);
+        localStorage.removeItem('aqua-vida-profile');
         this.router.navigate(['/login']);
       }
     });
@@ -59,12 +67,26 @@ export class AuthService {
         .single();
       
       if (error || !data) {
-        this.currentUser.set(null);
+        // En caso de error (ej. sin internet), intentamos cargar del caché local
+        const cached = localStorage.getItem('aqua-vida-profile');
+        if (cached) {
+          this.currentUser.set(JSON.parse(cached));
+        } else {
+          this.currentUser.set(null);
+        }
       } else {
+        // Guardamos en caché para uso offline
+        localStorage.setItem('aqua-vida-profile', JSON.stringify(data));
         this.currentUser.set(data as Profile);
       }
     } catch (e) {
-      this.currentUser.set(null);
+      // En caso de error de red, cargar de caché
+      const cached = localStorage.getItem('aqua-vida-profile');
+      if (cached) {
+        this.currentUser.set(JSON.parse(cached));
+      } else {
+        this.currentUser.set(null);
+      }
     } finally {
       this.loading.set(false);
     }
@@ -100,6 +122,7 @@ export class AuthService {
   async logout() {
     this.loading.set(true);
     await this.supabase.client.auth.signOut();
+    localStorage.removeItem('aqua-vida-profile');
     this.currentUser.set(null);
     this.loading.set(false);
     this.router.navigate(['/login']);
