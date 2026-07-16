@@ -1,0 +1,200 @@
+<div class="space-y-6">
+  
+  <!-- Encabezado y Filtros -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+        <svg lucidePieChart class="w-7 h-7 text-cyan-500"></svg>
+        Resumen Financiero
+      </h1>
+      <p class="text-sm text-slate-500 font-medium mt-1">Vistazo general de ingresos y gastos operativos</p>
+    </div>
+    
+    <div class="flex flex-wrap bg-slate-200/50 p-1 rounded-xl gap-1">
+      <button 
+        (click)="setFilter('today')"
+        [class]="activeFilter() === 'today' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
+      >
+        Hoy
+      </button>
+      <button 
+        (click)="setFilter('yesterday')"
+        [class]="activeFilter() === 'yesterday' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
+      >
+        Ayer
+      </button>
+      <button 
+        (click)="setFilter('week')"
+        [class]="activeFilter() === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
+      >
+        Esta Semana
+      </button>
+      <button 
+        (click)="setFilter('month')"
+        [class]="activeFilter() === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
+      >
+        Este Mes
+      </button>
+      <button 
+        (click)="setFilter('custom')"
+        [class]="activeFilter() === 'custom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
+      >
+        Personalizado
+      </button>
+    </div>
+  </div>
+
+  <!-- Selector de fechas personalizadas -->
+  @if (activeFilter() === 'custom') {
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-end gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+      <div class="flex-1">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Desde</label>
+        <input 
+          type="date" 
+          [value]="customStart()"
+          (change)="updateCustomStart($event)"
+          class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors font-medium outline-none"
+        >
+      </div>
+      <div class="flex-1">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Hasta</label>
+        <input 
+          type="date" 
+          [value]="customEnd()"
+          (change)="updateCustomEnd($event)"
+          class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors font-medium outline-none"
+        >
+      </div>
+      <button 
+        (click)="applyCustomFilter()"
+        class="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold px-6 py-2.5 rounded-lg transition-colors flex items-center justify-center sm:w-auto w-full"
+      >
+        Aplicar Filtro
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center py-20 space-y-4">
+      <span class="w-12 h-12 border-4 border-cyan-100 border-t-cyan-500 rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-bold">Calculando balance financiero...</span>
+    </div>
+  } @else {
+
+    <!-- Tarjetas de KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      
+      <!-- Ingresos -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 group hover:border-emerald-200 transition-colors">
+        <div class="w-14 h-14 shrink-0 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
+          <svg lucideTrendingUp class="w-6 h-6"></svg>
+        </div>
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Ingresos Brutos</p>
+          <h3 class="text-2xl font-black text-slate-800">${{ totalIncome() | number }}</h3>
+        </div>
+      </div>
+
+      <!-- Gastos -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 group hover:border-red-200 transition-colors">
+        <div class="w-14 h-14 shrink-0 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform">
+          <svg lucideTrendingDown class="w-6 h-6"></svg>
+        </div>
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Gastos Operativos</p>
+          <h3 class="text-2xl font-black text-slate-800">${{ totalExpenses() | number }}</h3>
+        </div>
+      </div>
+
+      <!-- Balance Neto -->
+      <div class="p-5 rounded-2xl shadow-md border flex items-center gap-4 transform transition-all hover:-translate-y-1"
+           [class]="netBalance() >= 0 ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 text-white' : 'bg-gradient-to-br from-red-600 to-red-800 border-red-700 text-white'">
+        <div class="w-14 h-14 shrink-0 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm">
+          <svg lucideWallet class="w-6 h-6"></svg>
+        </div>
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-wider text-white/60 mb-0.5">Balance Neto</p>
+          <h3 class="text-2xl font-black tracking-tight">${{ netBalance() | number }}</h3>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Desglose de Ventas por Método -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          Ingresos por Método de Pago
+        </h3>
+        
+        <div class="space-y-5">
+          <!-- Efectivo -->
+          <div>
+            <div class="flex justify-between text-sm font-bold mb-2">
+              <span class="text-slate-600">Efectivo</span>
+              <span class="text-slate-900">${{ salesByMethod().cash | number }}</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+              <div class="bg-emerald-500 h-2.5 rounded-full" [style.width.%]="totalIncome() ? (salesByMethod().cash / totalIncome()) * 100 : 0"></div>
+            </div>
+            <p class="text-[10px] text-slate-400 font-bold mt-1 text-right">
+              {{ totalIncome() ? ((salesByMethod().cash / totalIncome()) * 100 | number:'1.0-0') : 0 }}%
+            </p>
+          </div>
+          
+          <!-- Transferencia -->
+          <div>
+            <div class="flex justify-between text-sm font-bold mb-2">
+              <span class="text-slate-600">Transferencia</span>
+              <span class="text-slate-900">${{ salesByMethod().transfer | number }}</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+              <div class="bg-blue-500 h-2.5 rounded-full" [style.width.%]="totalIncome() ? (salesByMethod().transfer / totalIncome()) * 100 : 0"></div>
+            </div>
+            <p class="text-[10px] text-slate-400 font-bold mt-1 text-right">
+              {{ totalIncome() ? ((salesByMethod().transfer / totalIncome()) * 100 | number:'1.0-0') : 0 }}%
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desglose de Gastos por Categoría -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          Principales Gastos (Top Categorías)
+        </h3>
+        
+        @if (expensesByCategory().length === 0) {
+          <div class="text-center py-10">
+            <p class="text-sm font-bold text-slate-400">No hay gastos registrados en este periodo</p>
+          </div>
+        } @else {
+          <div class="space-y-5">
+            @for (cat of expensesByCategory() | slice:0:5; track cat.name) {
+              <div>
+                <div class="flex justify-between text-sm font-bold mb-2">
+                  <span class="text-slate-600">{{ cat.name }}</span>
+                  <span class="text-slate-900">${{ cat.amount | number }}</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+                  <div class="bg-red-400 h-2.5 rounded-full" [style.width.%]="cat.percentage"></div>
+                </div>
+                <p class="text-[10px] text-slate-400 font-bold mt-1 text-right">
+                  {{ cat.percentage | number:'1.0-1' }}% del total de gastos
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+
+  }
+</div>

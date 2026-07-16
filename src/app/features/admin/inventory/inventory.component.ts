@@ -4,7 +4,6 @@ import {
   LucideWarehouse, 
   LucideCheck, 
   LucideX, 
-  LucideAlertCircle, 
   LucideRefreshCw,
   LucideArrowUpRight
 } from '@lucide/angular';
@@ -21,7 +20,6 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } 
     LucideWarehouse, 
     LucideCheck, 
     LucideX, 
-    LucideAlertCircle, 
     LucideRefreshCw,
     LucideArrowUpRight
   ],

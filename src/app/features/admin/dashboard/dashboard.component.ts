@@ -3,7 +3,6 @@ import { SupabaseService } from '../../../core/services/supabase.service';
 import { 
   LucideTrendingUp, 
   LucideShoppingCart, 
-  LucideUsers, 
   LucideTruck,
   LucideDollarSign,
   LucideClock
@@ -17,7 +16,6 @@ import { CommonModule } from '@angular/common';
     CommonModule, 
     LucideTrendingUp, 
     LucideShoppingCart, 
-    LucideUsers, 
     LucideTruck,
     LucideDollarSign,
     LucideClock

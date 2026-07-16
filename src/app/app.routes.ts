@@ -36,8 +36,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/clients/clients.component').then(c => c.ClientsComponent)
       },
       {
+        path: 'expenses',
+        loadComponent: () => import('./features/admin/expenses/expenses.component').then(c => c.AdminExpensesComponent)
+      },
+      {
+        path: 'overview',
+        loadComponent: () => import('./features/admin/overview/overview.component').then(c => c.OverviewComponent)
+      },
+      {
         path: '',
-        redirectTo: 'dashboard',
+        redirectTo: 'overview',
         pathMatch: 'full'
       }
     ]

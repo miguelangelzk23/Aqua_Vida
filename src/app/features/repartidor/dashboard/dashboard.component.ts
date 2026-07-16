@@ -6,8 +6,6 @@ import {
   LucidePlay, 
   LucideTruck, 
   LucidePlus, 
-  LucideDollarSign, 
-  LucideCalendar, 
   LucidePackage,
   LucideCheckCircle
 } from '@lucide/angular';
@@ -24,8 +22,6 @@ import { FormsModule } from '@angular/forms';
     LucidePlay, 
     LucideTruck, 
     LucidePlus, 
-    LucideDollarSign, 
-    LucideCalendar, 
     LucidePackage,
     LucideCheckCircle
   ],
@@ -224,5 +220,16 @@ export class RepartidorDashboardComponent implements OnInit {
     if (current > 0) {
       this.loadQuantities[productId] = current - 1;
     }
+  }
+
+  updateLoadQuantity(productId: string, event: any) {
+    let val = parseInt(event.target.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    
+    const max = this.getProductStock(productId);
+    if (val > max) val = max;
+
+    this.loadQuantities[productId] = val;
+    event.target.value = val;
   }
 }
