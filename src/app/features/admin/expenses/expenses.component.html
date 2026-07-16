@@ -1,0 +1,295 @@
+<div class="space-y-6">
+  
+  <!-- Encabezado -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">Gastos Operativos</h1>
+      <p class="text-sm text-slate-500 font-medium mt-1">Gestión de gastos y categorías</p>
+    </div>
+    
+    <div class="flex bg-slate-200/50 p-1 rounded-xl">
+      <button 
+        (click)="setTab('list')"
+        [class]="activeTab() === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-4 py-2 text-sm font-bold rounded-lg transition-all"
+      >
+        Historial
+      </button>
+      <button 
+        (click)="setTab('new_expense')"
+        [class]="activeTab() === 'new_expense' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center space-x-1"
+      >
+        <svg lucidePlus class="w-4 h-4"></svg>
+        <span>Gasto</span>
+      </button>
+      <button 
+        (click)="setTab('categories')"
+        [class]="activeTab() === 'categories' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+        class="px-4 py-2 text-sm font-bold rounded-lg transition-all"
+      >
+        Categorías
+      </button>
+    </div>
+  </div>
+
+  <!-- Alertas Globales -->
+  @if (errorMessage()) {
+    <div class="p-4 bg-red-50 text-red-600 border border-red-100 rounded-xl font-medium flex items-center space-x-3">
+      <svg lucideAlertCircle class="w-5 h-5"></svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+  @if (successMessage()) {
+    <div class="p-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-medium flex items-center space-x-3 animate-in fade-in slide-in-from-top-2">
+      <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">✓</div>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (loading() && expenses().length === 0 && categories().length === 0) {
+    <div class="flex flex-col items-center justify-center py-20 space-y-4">
+      <span class="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></span>
+      <span class="text-sm text-slate-500 font-bold">Cargando datos...</span>
+    </div>
+  } @else {
+    
+    <!-- Pestaña: Historial de Gastos -->
+    @if (activeTab() === 'list') {
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <svg lucideBanknote class="w-5 h-5 text-blue-500"></svg>
+            Historial de Gastos
+          </h2>
+          <button (click)="loadData()" class="text-sm font-bold text-blue-600 hover:text-blue-700">Actualizar</button>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200">
+                <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Fecha</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Categoría</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider">Detalle</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">Monto</th>
+                <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (expense of expenses(); track expense.id) {
+                <tr class="hover:bg-slate-50 transition-colors group">
+                  <td class="px-6 py-4">
+                    <span class="block text-sm font-bold text-slate-800">{{ expense.expense_date | date:'mediumDate' }}</span>
+                    <span class="block text-xs text-slate-400 mt-1">Por: {{ expense.profile?.full_name }}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                      {{ expense.category?.name || 'General' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="text-sm font-medium text-slate-600">{{ expense.description }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <span class="text-sm font-black text-red-600">${{ expense.amount | number }}</span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button 
+                      (click)="deleteExpense(expense.id)"
+                      class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar gasto"
+                    >
+                      <svg lucideTrash2 class="w-4 h-4"></svg>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="px-6 py-16 text-center">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                      <svg lucideBanknote class="w-8 h-8 text-slate-300"></svg>
+                    </div>
+                    <span class="block text-sm font-bold text-slate-500">No hay gastos registrados</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Pestaña: Nuevo Gasto -->
+    @if (activeTab() === 'new_expense') {
+      <div class="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <svg lucidePlus class="w-5 h-5 text-emerald-500"></svg>
+            Registrar Nuevo Gasto
+          </h2>
+        </div>
+        
+        <form [formGroup]="expenseForm" (ngSubmit)="onSubmitExpense()" class="p-6 space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- Categoría -->
+            <div>
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Categoría</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg lucideTags class="w-4 h-4"></svg>
+                </span>
+                <select 
+                  formControlName="category_id"
+                  class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all appearance-none"
+                >
+                  <option value="" disabled>Selecciona una categoría...</option>
+                  @for (cat of categories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+              @if (categories().length === 0) {
+                <p class="text-xs text-orange-500 mt-1 font-medium">Primero debes crear categorías.</p>
+              }
+            </div>
+
+            <!-- Fecha -->
+            <div>
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Fecha del Gasto</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <svg lucideCalendar class="w-4 h-4"></svg>
+                </span>
+                <input 
+                  type="date" 
+                  formControlName="expense_date"
+                  class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Monto -->
+          <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Monto ($)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold">$</span>
+              <input 
+                type="number" 
+                formControlName="amount"
+                placeholder="0.00"
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Descripción (Opcional)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 pt-3 text-slate-400">
+                <svg lucideFileText class="w-4 h-4"></svg>
+              </span>
+              <textarea 
+                formControlName="description"
+                placeholder="Detalles del gasto..."
+                rows="3"
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex justify-end">
+            <button 
+              type="submit" 
+              [disabled]="expenseForm.invalid || loading()"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 transition-all flex items-center space-x-2"
+            >
+              @if (loading()) {
+                <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              } @else {
+                <svg lucideBanknote class="w-4 h-4"></svg>
+              }
+              <span>Guardar Gasto</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Pestaña: Categorías -->
+    @if (activeTab() === 'categories') {
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulario Categoría -->
+        <div class="lg:col-span-1">
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden sticky top-6">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+              <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <svg lucidePlus class="w-4 h-4 text-emerald-500"></svg>
+                Nueva Categoría
+              </h2>
+            </div>
+            
+            <form [formGroup]="categoryForm" (ngSubmit)="onSubmitCategory()" class="p-5 space-y-4">
+              <div>
+                <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Nombre de Categoría</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                    <svg lucideTags class="w-4 h-4"></svg>
+                  </span>
+                  <input 
+                    type="text" 
+                    formControlName="name"
+                    placeholder="Ej. Gasolina, Comida..."
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                [disabled]="categoryForm.invalid || loading()"
+                class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center space-x-2"
+              >
+                <span>Crear Categoría</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Lista Categorías -->
+        <div class="lg:col-span-2">
+          <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+              <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <svg lucideTags class="w-4 h-4 text-blue-500"></svg>
+                Categorías Registradas
+              </h2>
+            </div>
+            
+            <ul class="divide-y divide-slate-100">
+              @for (cat of categories(); track cat.id) {
+                <li class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <span class="font-bold text-slate-700">{{ cat.name }}</span>
+                  <button 
+                    (click)="deleteCategory(cat.id)"
+                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Eliminar categoría"
+                  >
+                    <svg lucideTrash2 class="w-4 h-4"></svg>
+                  </button>
+                </li>
+              } @empty {
+                <li class="p-8 text-center text-sm font-bold text-slate-400">
+                  Aún no hay categorías
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    }
+
+  }
+</div>

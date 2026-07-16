@@ -381,4 +381,90 @@ export class SupabaseService {
     if (error) throw error;
     return data;
   }
+
+  // --- Gastos Operativos ---
+  async getExpenseCategories() {
+    const { data, error } = await this.client
+      .from('expense_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return data;
+  }
+
+  async createExpenseCategory(name: string) {
+    const { data, error } = await this.client
+      .from('expense_categories')
+      .insert({ name })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteExpenseCategory(id: string) {
+    const { error } = await this.client
+      .from('expense_categories')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
+  async getExpenses(startDate?: string, endDate?: string) {
+    let query = this.client
+      .from('expenses')
+      .select(`
+        *,
+        category:expense_categories(name),
+        profile:profiles(full_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (startDate) {
+      query = query.gte('expense_date', startDate);
+    }
+    if (endDate) {
+      query = query.lte('expense_date', endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  }
+
+  async createExpense(expense: { category_id: string; amount: number; description: string; expense_date: string; created_by: string }) {
+    const { data, error } = await this.client
+      .from('expenses')
+      .insert(expense)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteExpense(id: string) {
+    const { error } = await this.client
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
+  // --- Overview ---
+  async getSalesForOverview(startDate?: string, endDate?: string) {
+    let query = this.client
+      .from('sales')
+      .select('total_amount, payment_method, sale_date');
+
+    if (startDate) {
+      query = query.gte('sale_date', `${startDate}T00:00:00.000Z`);
+    }
+    if (endDate) {
+      query = query.lte('sale_date', `${endDate}T23:59:59.999Z`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  }
 }

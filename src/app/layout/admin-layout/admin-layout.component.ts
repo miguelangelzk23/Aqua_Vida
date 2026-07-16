@@ -10,7 +10,9 @@ import {
   LucideUser,
   LucideUsers,
   LucideMenu,
-  LucideX
+  LucideX,
+  LucideBanknote,
+  LucidePieChart
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 
@@ -30,7 +32,9 @@ import { CommonModule } from '@angular/common';
     LucideUser,
     LucideUsers,
     LucideMenu,
-    LucideX
+    LucideX,
+    LucideBanknote,
+    LucidePieChart
   ],
   template: `
     <div class="min-h-screen flex bg-slate-50">
@@ -57,6 +61,16 @@ import { CommonModule } from '@angular/common';
 
           <!-- Navegación -->
           <nav class="p-4 space-y-2 mt-4">
+            <a 
+              routerLink="/admin/overview" 
+              routerLinkActive="bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/10 font-bold"
+              [routerLinkActiveOptions]="{exact: true}"
+              (click)="closeMobileMenu()"
+              class="flex items-center space-x-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+            >
+              <svg lucidePieChart class="w-5 h-5 group-hover:scale-105 transition-transform"></svg>
+              <span>Resumen Financiero</span>
+            </a>
             <a 
               routerLink="/admin/dashboard" 
               routerLinkActive="bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/10 font-bold"
@@ -102,6 +116,15 @@ import { CommonModule } from '@angular/common';
             >
               <svg lucideUsers class="w-5 h-5 group-hover:scale-105 transition-transform"></svg>
               <span>Gestión de Clientes</span>
+            </a>
+            <a 
+              routerLink="/admin/expenses" 
+              routerLinkActive="bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/10 font-bold"
+              (click)="closeMobileMenu()"
+              class="flex items-center space-x-3 px-4 py-3.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+            >
+              <svg lucideBanknote class="w-5 h-5 group-hover:scale-105 transition-transform"></svg>
+              <span>Gastos Operativos</span>
             </a>
             <a 
               routerLink="/admin/users" 

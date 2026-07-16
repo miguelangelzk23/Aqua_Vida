@@ -76,27 +76,17 @@
                   </span>
                 </div>
                 
-                <!-- Selector Táctil - / + -->
-                <div class="flex items-center space-x-2 shrink-0">
-                  <button 
-                    type="button"
-                    (click)="decrementLoad(prod.id)"
-                    [disabled]="getLoadQuantity(prod.id) <= 0"
-                    class="w-11 h-11 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black text-lg shadow-sm active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
+                <!-- Selector input numérico -->
+                <div class="flex items-center shrink-0">
+                  <input 
+                    type="number"
+                    [value]="getLoadQuantity(prod.id)"
+                    (input)="updateLoadQuantity(prod.id, $event)"
+                    min="0"
+                    [max]="getProductStock(prod.id)"
+                    class="w-20 bg-white border border-slate-200 text-slate-850 text-center text-sm font-black rounded-xl px-2 py-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
+                    placeholder="0"
                   >
-                    -
-                  </button>
-                  <span class="w-8 text-center text-sm font-black text-slate-850 select-none">
-                    {{ getLoadQuantity(prod.id) }}
-                  </span>
-                  <button 
-                    type="button"
-                    (click)="incrementLoad(prod.id)"
-                    [disabled]="getLoadQuantity(prod.id) >= getProductStock(prod.id)"
-                    class="w-11 h-11 bg-white border border-slate-200 text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-center font-black text-lg shadow-sm active:scale-90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer transition-all"
-                  >
-                    +
-                  </button>
                 </div>
               </div>
             } @empty {

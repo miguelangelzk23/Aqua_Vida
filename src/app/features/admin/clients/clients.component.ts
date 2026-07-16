@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../core/services/supabase.service';
-import { LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle, LucideMessageCircle } from '@lucide/angular';
+import { LucideUsers, LucidePhone, LucideMapPin, LucideAlertCircle, LucideMessageCircle } from '@lucide/angular';
 
 @Component({
   selector: 'app-admin-clients',
   standalone: true,
-  imports: [CommonModule, LucideUsers, LucidePhone, LucideMapPin, LucideClock, LucideAlertCircle, LucideMessageCircle],
+  imports: [CommonModule, LucideUsers, LucidePhone, LucideMapPin, LucideAlertCircle, LucideMessageCircle],
   templateUrl: './clients.component.html'
 })
 export class ClientsComponent implements OnInit {

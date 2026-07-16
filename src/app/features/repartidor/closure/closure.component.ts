@@ -5,7 +5,6 @@ import {
   LucideClipboardCheck, 
   LucideCheckCircle, 
   LucideAlertCircle, 
-  LucideDollarSign,
   LucideMessageSquare
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
@@ -20,7 +19,6 @@ import { FormsModule } from '@angular/forms';
     LucideClipboardCheck, 
     LucideCheckCircle, 
     LucideAlertCircle, 
-    LucideDollarSign,
     LucideMessageSquare
   ],
   templateUrl: './closure.component.html'
