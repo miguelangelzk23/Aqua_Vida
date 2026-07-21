@@ -212,17 +212,20 @@
               <div class="p-5">
                 <div class="flex justify-between items-start mb-4">
                   <span class="block text-lg font-black text-slate-800">{{ cItem.name }} <span class="text-xs text-slate-400 font-bold ml-1">{{ cItem.unit }}</span></span>
-                  <button (click)="removeFromCart(cItem.productId)" class="text-slate-300 hover:text-red-500 transition-colors p-1" [class.opacity-0]="cItem.quantity > 1">
+                  <button (click)="deleteFromCart(cItem.productId)" class="text-slate-300 hover:text-red-500 transition-colors p-1" title="Eliminar del carrito">
                     <svg lucideTrash2 class="w-5 h-5"></svg>
                   </button>
                 </div>
 
-                <div class="flex items-center gap-4">
-                  <!-- Stepper -->
-                  <div class="flex items-center bg-slate-100 rounded-xl p-1 shadow-inner shrink-0 w-28">
-                    <button (click)="removeFromCart(cItem.productId)" class="flex-1 py-1.5 flex items-center justify-center rounded-lg font-black text-lg active:scale-95 transition-transform bg-white shadow-sm text-slate-600">-</button>
-                    <div class="w-8 text-center font-black text-lg text-slate-800">{{ cItem.quantity }}</div>
-                    <button (click)="incrementCartItem(cItem.productId)" [disabled]="cItem.quantity >= cItem.maxQuantity" class="flex-1 py-1.5 flex items-center justify-center rounded-lg font-black text-lg active:scale-95 transition-transform bg-blue-500 shadow-sm text-white disabled:opacity-30">+</button>
+                  <div class="flex items-center gap-4">
+                  <!-- Stepper / Input -->
+                  <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl shadow-inner shrink-0 w-24 px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <input type="number" 
+                           [ngModel]="cItem.quantity" 
+                           (ngModelChange)="setCartItemQuantity(cItem.productId, $event)"
+                           min="0"
+                           [max]="cItem.maxQuantity"
+                           class="w-full text-center font-black text-xl text-slate-800 bg-transparent outline-none focus:ring-0 p-0 m-0 no-spinners">
                   </div>
 
                   <!-- Price Editor -->
