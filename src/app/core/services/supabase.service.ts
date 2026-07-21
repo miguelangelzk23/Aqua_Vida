@@ -296,8 +296,21 @@ export class SupabaseService {
 
       return saleData;
     } catch (error: any) {
-      // Si falla por problema de red (TypeError usualmente significa fetch failed), lo intentamos guardar offline
-      if (error instanceof TypeError || error.message?.includes('fetch') || error.message?.includes('network')) {
+      // Si falla por problema de red (TypeError, fetch failed, Safari load failed), lo intentamos guardar offline
+      const msg = error?.message?.toLowerCase() || '';
+      const code = error?.code || '';
+      
+      const isNetworkError = 
+        error instanceof TypeError || 
+        code === 'FETCH_ERROR' ||
+        msg.includes('fetch') || 
+        msg.includes('network') ||
+        msg.includes('offline') ||
+        msg.includes('internet') ||
+        msg.includes('load failed') ||
+        msg.includes('connection');
+
+      if (isNetworkError) {
         await this.offlineSync.saveSaleOffline(sale, items);
         return { offline: true };
       }
