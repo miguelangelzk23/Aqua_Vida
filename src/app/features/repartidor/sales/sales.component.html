@@ -221,6 +221,8 @@
                   <!-- Stepper / Input -->
                   <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl shadow-inner shrink-0 w-24 px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                     <input type="number" 
+                           inputmode="numeric"
+                           pattern="[0-9]*"
                            [ngModel]="cItem.quantity" 
                            (ngModelChange)="setCartItemQuantity(cItem.productId, $event)"
                            min="0"
