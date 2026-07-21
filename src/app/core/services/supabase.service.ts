@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
+import { OfflineSyncService } from './offline-sync.service';
 
 const idbStorage = {
   async getItem(key: string): Promise<string | null> {
@@ -51,6 +52,7 @@ const idbStorage = {
 export class SupabaseService {
   public client: SupabaseClient;
   private adminAuthClient: SupabaseClient;
+  private offlineSync = inject(OfflineSyncService);
 
   constructor() {
     this.client = createClient(environment.supabaseUrl, environment.supabaseKey, {
@@ -69,6 +71,70 @@ export class SupabaseService {
         autoRefreshToken: false
       }
     });
+
+    // Escuchar cuando regresa el internet para sincronizar ventas
+    window.addEventListener('online', () => {
+      this.syncOfflineSales();
+    });
+    
+    // Intentar sincronizar al arrancar si hay internet
+    if (navigator.onLine) {
+      setTimeout(() => this.syncOfflineSales(), 3000);
+    }
+  }
+
+  async syncOfflineSales() {
+    if (this.offlineSync.isSyncing() || !navigator.onLine) return;
+    
+    try {
+      this.offlineSync.isSyncing.set(true);
+      const pendingSales = await this.offlineSync.getPendingSales();
+      
+      for (const pending of pendingSales) {
+        try {
+          // Intentar insertar la venta directamente a Supabase respetando la fecha original
+          const salePayload = {
+            ...pending.sale,
+            sale_date: new Date(pending.createdAt).toISOString()
+          };
+
+          const { data: saleData, error: saleError } = await this.client
+            .from('sales')
+            .insert(salePayload)
+            .select()
+            .single();
+
+          if (saleError) throw saleError;
+
+          const saleItems = pending.items.map(item => ({
+            sale_id: saleData.id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price
+          }));
+
+          const { error: itemsError } = await this.client
+            .from('sale_items')
+            .insert(saleItems);
+
+          if (itemsError) {
+            await this.client.from('sales').delete().eq('id', saleData.id);
+            throw itemsError;
+          }
+
+          // Si todo salió bien, eliminar de IndexedDB
+          await this.offlineSync.removePendingSale(pending.id!);
+        } catch (e) {
+          console.error('Error sincronizando venta individual:', e);
+          // Si falla una, paramos y volvemos a intentar luego
+          break;
+        }
+      }
+    } catch (e) {
+      console.error('Error general sincronizando ventas:', e);
+    } finally {
+      this.offlineSync.isSyncing.set(false);
+    }
   }
 
   // --- Catálogo de Productos ---
@@ -196,36 +262,47 @@ export class SupabaseService {
   }
 
   async createSale(sale: { daily_load_id: string; repartidor_id: string; client_id?: string | null; client_name?: string; description?: string; payment_method: string }, items: { product_id: string; quantity: number; unit_price: number }[]) {
-    // Iniciamos una transacción simulada usando el cliente Supabase
-    // Dado que Supabase JS no tiene transacciones complejas en cliente sin funciones, podemos insertar la venta principal 
-    // y luego sus items. Si falla, manejamos el error. Nuestro disparador de stock móvil se ejecutará al insertar los items.
-    
-    const { data: saleData, error: saleError } = await this.client
-      .from('sales')
-      .insert(sale)
-      .select()
-      .single();
-
-    if (saleError) throw saleError;
-
-    const saleItems = items.map(item => ({
-      sale_id: saleData.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      unit_price: item.unit_price
-    }));
-
-    const { error: itemsError } = await this.client
-      .from('sale_items')
-      .insert(saleItems);
-
-    if (itemsError) {
-      // Intentamos deshacer la venta creada en caso de error de stock
-      await this.client.from('sales').delete().eq('id', saleData.id);
-      throw itemsError;
+    // Si no hay internet, guardamos directamente offline
+    if (!navigator.onLine) {
+      await this.offlineSync.saveSaleOffline(sale, items);
+      return { offline: true };
     }
 
-    return saleData;
+    try {
+      const { data: saleData, error: saleError } = await this.client
+        .from('sales')
+        .insert(sale)
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      const saleItems = items.map(item => ({
+        sale_id: saleData.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price
+      }));
+
+      const { error: itemsError } = await this.client
+        .from('sale_items')
+        .insert(saleItems);
+
+      if (itemsError) {
+        // Intentamos deshacer la venta creada en caso de error de stock
+        await this.client.from('sales').delete().eq('id', saleData.id);
+        throw itemsError;
+      }
+
+      return saleData;
+    } catch (error: any) {
+      // Si falla por problema de red (TypeError usualmente significa fetch failed), lo intentamos guardar offline
+      if (error instanceof TypeError || error.message?.includes('fetch') || error.message?.includes('network')) {
+        await this.offlineSync.saveSaleOffline(sale, items);
+        return { offline: true };
+      }
+      throw error;
+    }
   }
 
   // --- Cierre de Jornada (RPC) ---

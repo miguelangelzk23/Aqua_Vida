@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { OfflineSyncService, OfflineSale } from '../../../core/services/offline-sync.service';
 import { RouterLink } from '@angular/router';
 import { 
   LucidePlay, 
@@ -30,6 +31,7 @@ import { FormsModule } from '@angular/forms';
 export class RepartidorDashboardComponent implements OnInit {
   public auth = inject(AuthService);
   private supabase = inject(SupabaseService);
+  public offlineSync = inject(OfflineSyncService);
 
   loading = signal<boolean>(true);
   actionLoading = signal<boolean>(false);
@@ -50,6 +52,9 @@ export class RepartidorDashboardComponent implements OnInit {
   // Resumen de ventas
   summarySalesTotal = signal<number>(0);
   summarySalesCash = signal<number>(0);
+
+  // Ventas pendientes offline
+  pendingOfflineSales = signal<OfflineSale[]>([]);
 
   ngOnInit() {
     this.loadDashboardData();
@@ -73,6 +78,10 @@ export class RepartidorDashboardComponent implements OnInit {
         // 3. Obtener ventas de esta jornada
         const salesList = await this.supabase.getSalesByLoad(dailyLoad.id);
         this.sales.set(salesList);
+
+        // 3.5 Obtener ventas offline pendientes para esta jornada
+        const pending = await this.offlineSync.getPendingSales();
+        this.pendingOfflineSales.set(pending.filter(p => p.sale.daily_load_id === dailyLoad.id));
 
         // 4. Calcular el stock actual del vehículo
         this.calculateMobileInventory();
@@ -113,6 +122,15 @@ export class RepartidorDashboardComponent implements OnInit {
         });
       });
 
+      // Sumar lo vendido offline (aún no sincronizado)
+      this.pendingOfflineSales().forEach(offlineSale => {
+        offlineSale.items.forEach(si => {
+          if (si.product_id === item.product_id) {
+            soldCount += si.quantity;
+          }
+        });
+      });
+
       return {
         id: item.id,
         productId: item.product_id,
@@ -131,12 +149,24 @@ export class RepartidorDashboardComponent implements OnInit {
     const salesList = this.sales();
     let total = 0;
     let cash = 0;
+    
+    // Ventas sincronizadas
     salesList.forEach(s => {
       total += Number(s.total_amount);
       if (s.payment_method === 'efectivo') {
         cash += Number(s.total_amount);
       }
     });
+
+    // Ventas offline pendientes
+    this.pendingOfflineSales().forEach(offlineSale => {
+      const offlineTotal = offlineSale.sale.total_amount || 0;
+      total += Number(offlineTotal);
+      if (offlineSale.sale.payment_method === 'efectivo') {
+        cash += Number(offlineTotal);
+      }
+    });
+
     this.summarySalesTotal.set(total);
     this.summarySalesCash.set(cash);
   }
