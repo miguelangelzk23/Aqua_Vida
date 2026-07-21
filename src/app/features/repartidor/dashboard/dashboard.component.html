@@ -113,6 +113,25 @@
 
     <!-- CASO 3: TIENE JORNADA ABIERTA Y MERCANCÍA CARGADA -->
     @else {
+      <!-- Indicador de Sincronización Offline -->
+      @if (offlineSync.pendingSalesCount() > 0 || offlineSync.isSyncing()) {
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-3xl shadow-sm flex items-center justify-between mb-2">
+          <div class="flex flex-col">
+            <span class="text-xs font-bold text-amber-800">Modo Offline Activo</span>
+            <span class="text-[10px] text-amber-600 font-medium">
+              @if (offlineSync.isSyncing()) {
+                Sincronizando ventas pendientes...
+              } @else {
+                {{ offlineSync.pendingSalesCount() }} venta(s) pendiente(s) por subir. Conéctate a internet.
+              }
+            </span>
+          </div>
+          @if (offlineSync.isSyncing()) {
+            <span class="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></span>
+          }
+        </div>
+      }
+
       <!-- Resumen de Ventas de la Jornada -->
       <div class="grid grid-cols-2 gap-3.5">
         <div class="bg-white border border-slate-200 rounded-3xl p-4.5 shadow-sm">

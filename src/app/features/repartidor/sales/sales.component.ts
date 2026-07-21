@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { SupabaseService } from '../../../core/services/supabase.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { OfflineSyncService } from '../../../core/services/offline-sync.service';
 import { 
   LucidePlus, 
   LucideTrash2, 
@@ -68,6 +69,7 @@ interface CartItem {
 export class RepartidorSalesComponent implements OnInit {
   private supabase = inject(SupabaseService);
   private auth = inject(AuthService);
+  private offlineSync = inject(OfflineSyncService);
   private fb = inject(FormBuilder);
   private destroyRef = inject(DestroyRef);
 
@@ -76,6 +78,7 @@ export class RepartidorSalesComponent implements OnInit {
   actionLoading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
   showSuccessModal = signal<boolean>(false);
+  isOfflineSale = signal<boolean>(false);
   lastRegisteredSale = signal<any>(null);
 
   isProductModalOpen = signal<boolean>(false);
@@ -177,12 +180,23 @@ export class RepartidorSalesComponent implements OnInit {
         const salesList = await this.supabase.getSalesByLoad(dailyLoad.id);
         this.sales.set(salesList);
 
+        const pendingOfflineSales = await this.offlineSync.getPendingSales();
+        const pendingForLoad = pendingOfflineSales.filter(p => p.sale.daily_load_id === dailyLoad.id);
+
         const loadItems = await this.supabase.getDailyLoadItems(dailyLoad.id);
         
         const itemsMap: LoadedItem[] = loadItems.map(item => {
           let soldCount = 0;
           salesList.forEach(sale => {
             sale.sale_items?.forEach((si: any) => {
+              if (si.product_id === item.product_id) {
+                soldCount += si.quantity;
+              }
+            });
+          });
+
+          pendingForLoad.forEach(pending => {
+            pending.items.forEach(si => {
               if (si.product_id === item.product_id) {
                 soldCount += si.quantity;
               }
@@ -403,7 +417,7 @@ export class RepartidorSalesComponent implements OnInit {
       let clientId = formVal.client_id;
       
       // Si hay teléfono pero no hay ID de cliente, significa que es un cliente nuevo. Lo creamos.
-      if (formVal.client_phone && !clientId) {
+      if (formVal.client_phone && !clientId && navigator.onLine) {
         try {
           const newClient = await this.supabase.createClient({
             phone: formVal.client_phone,
@@ -416,22 +430,32 @@ export class RepartidorSalesComponent implements OnInit {
         }
       }
 
-      await this.supabase.createSale({
+      const saleData = {
         daily_load_id: dailyLoad.id,
         repartidor_id: repartidorId,
         client_id: clientId || null,
         client_name: formVal.client_name || null,
         description: formVal.description || null,
         payment_method: formVal.payment_method
-      }, saleItems);
+      };
+
+      const res = await this.supabase.createSale(saleData, saleItems);
+
+      if (res && res.offline) {
+        this.isOfflineSale.set(true);
+      } else {
+        this.isOfflineSale.set(false);
+      }
 
       this.lastRegisteredSale.set({
         client_name: formVal.client_name || 'Consumidor Final',
         payment_method: formVal.payment_method,
         total_amount: this.cartTotal(),
-        item_count: this.cartItemsCount()
+        item_count: this.cartItemsCount(),
+        offline: res?.offline || false
       });
 
+      this.cart.set([]);
       this.showSuccessModal.set(true);
     } catch (e: any) {
       console.error(e);
@@ -443,6 +467,7 @@ export class RepartidorSalesComponent implements OnInit {
 
   closeSuccessModal() {
     this.showSuccessModal.set(false);
+    this.isOfflineSale.set(false);
     this.lastRegisteredSale.set(null);
     this.viewState.set('history');
     this.loadSalesData();

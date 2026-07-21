@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from './supabase.service';
+import { OfflineSyncService } from './offline-sync.service';
 
 export interface Profile {
   id: string;
@@ -15,6 +16,7 @@ export interface Profile {
 export class AuthService {
   private supabase = inject(SupabaseService);
   private router = inject(Router);
+  private offlineSync = inject(OfflineSyncService);
 
   // Signals
   public currentUser = signal<Profile | null>(null);
@@ -120,6 +122,16 @@ export class AuthService {
   }
 
   async logout() {
+    if (!navigator.onLine) {
+      alert('No puedes cerrar sesión sin conexión a internet.');
+      return;
+    }
+
+    if (this.offlineSync.pendingSalesCount() > 0) {
+      alert('Tienes ventas sin sincronizar. Conéctate a internet para guardarlas antes de cerrar sesión.');
+      return;
+    }
+
     this.loading.set(true);
     await this.supabase.client.auth.signOut();
     localStorage.removeItem('aqua-vida-profile');
