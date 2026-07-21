@@ -328,32 +328,31 @@ export class RepartidorSalesComponent implements OnInit {
     });
   }
 
-  removeFromCart(productId: string) {
-    this.cart.update(items => {
-      const existing = items.find(i => i.productId === productId);
-      if (existing) {
-        if (existing.quantity > 1) {
-          existing.quantity--;
-          return [...items];
-        } else {
-          return items.filter(i => i.productId !== productId);
-        }
-      }
-      return items;
-    });
+
+
+  deleteFromCart(productId: string) {
+    this.cart.update(items => items.filter(i => i.productId !== productId));
   }
 
-  incrementCartItem(productId: string) {
+  setCartItemQuantity(productId: string, qty: number) {
     this.cart.update(items => {
       const existing = items.find(i => i.productId === productId);
       if (existing) {
-        if (existing.quantity < existing.maxQuantity) {
-          existing.quantity++;
+        let val = Math.floor(qty);
+        if (val < 0) val = 0;
+        if (val > existing.maxQuantity) val = existing.maxQuantity;
+        
+        if (val === 0) {
+          return items.filter(i => i.productId !== productId);
+        } else {
+          existing.quantity = val;
         }
       }
       return [...items];
     });
   }
+
+
 
   setCartItemPrice(productId: string, price: number) {
     this.cart.update(items => {
