@@ -185,9 +185,9 @@ export class RepartidorSalesComponent implements OnInit {
 
         const loadItems = await this.supabase.getDailyLoadItems(dailyLoad.id);
         
-        const itemsMap: LoadedItem[] = loadItems.map(item => {
+        const itemsMap: LoadedItem[] = loadItems.map((item: any) => {
           let soldCount = 0;
-          salesList.forEach(sale => {
+          salesList.forEach((sale: any) => {
             sale.sale_items?.forEach((si: any) => {
               if (si.product_id === item.product_id) {
                 soldCount += si.quantity;
@@ -195,8 +195,8 @@ export class RepartidorSalesComponent implements OnInit {
             });
           });
 
-          pendingForLoad.forEach(pending => {
-            pending.items.forEach(si => {
+          pendingForLoad.forEach((pending: any) => {
+            pending.items.forEach((si: any) => {
               if (si.product_id === item.product_id) {
                 soldCount += si.quantity;
               }

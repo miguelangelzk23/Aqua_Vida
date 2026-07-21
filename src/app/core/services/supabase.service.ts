@@ -201,14 +201,31 @@ export class SupabaseService {
 
   // --- Jornadas de Repartidores (Daily Loads) ---
   async getOpenDailyLoad(repartidorId: string) {
-    const { data, error } = await this.client
-      .from('daily_loads')
-      .select('*')
-      .eq('repartidor_id', repartidorId)
-      .eq('status', 'open')
-      .maybeSingle();
-    if (error) throw error;
-    return data;
+    if (!navigator.onLine) {
+      const cached = localStorage.getItem(`offline_daily_load_${repartidorId}`);
+      if (cached) return JSON.parse(cached);
+    }
+    try {
+      const { data, error } = await this.client
+        .from('daily_loads')
+        .select('*')
+        .eq('repartidor_id', repartidorId)
+        .eq('status', 'open')
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        localStorage.setItem(`offline_daily_load_${repartidorId}`, JSON.stringify(data));
+      } else {
+        localStorage.removeItem(`offline_daily_load_${repartidorId}`);
+      }
+      return data;
+    } catch (e: any) {
+      if (this.isNetworkError(e)) {
+        const cached = localStorage.getItem(`offline_daily_load_${repartidorId}`);
+        if (cached) return JSON.parse(cached);
+      }
+      throw e;
+    }
   }
 
   async getDailyLoadsHistory(repartidorId: string) {
@@ -233,12 +250,25 @@ export class SupabaseService {
 
   // --- Carga Inicial por Jornada (Daily Load Items) ---
   async getDailyLoadItems(dailyLoadId: string) {
-    const { data, error } = await this.client
-      .from('daily_load_items')
-      .select('*, products(name, unit, base_price, price_options)')
-      .eq('daily_load_id', dailyLoadId);
-    if (error) throw error;
-    return data;
+    if (!navigator.onLine) {
+      const cached = localStorage.getItem(`offline_load_items_${dailyLoadId}`);
+      if (cached) return JSON.parse(cached);
+    }
+    try {
+      const { data, error } = await this.client
+        .from('daily_load_items')
+        .select('*, products(name, unit, base_price, price_options)')
+        .eq('daily_load_id', dailyLoadId);
+      if (error) throw error;
+      localStorage.setItem(`offline_load_items_${dailyLoadId}`, JSON.stringify(data));
+      return data;
+    } catch (e: any) {
+      if (this.isNetworkError(e)) {
+        const cached = localStorage.getItem(`offline_load_items_${dailyLoadId}`);
+        if (cached) return JSON.parse(cached);
+      }
+      throw e;
+    }
   }
 
   async addDailyLoadItems(items: { daily_load_id: string; product_id: string; quantity_loaded: number }[]) {
@@ -252,13 +282,26 @@ export class SupabaseService {
 
   // --- Ventas ---
   async getSalesByLoad(dailyLoadId: string) {
-    const { data, error } = await this.client
-      .from('sales')
-      .select('*, sale_items(*, products(name, unit))')
-      .eq('daily_load_id', dailyLoadId)
-      .order('sale_date', { ascending: false });
-    if (error) throw error;
-    return data;
+    if (!navigator.onLine) {
+      const cached = localStorage.getItem(`offline_sales_${dailyLoadId}`);
+      if (cached) return JSON.parse(cached);
+    }
+    try {
+      const { data, error } = await this.client
+        .from('sales')
+        .select('*, sale_items(*, products(name, unit))')
+        .eq('daily_load_id', dailyLoadId)
+        .order('sale_date', { ascending: false });
+      if (error) throw error;
+      localStorage.setItem(`offline_sales_${dailyLoadId}`, JSON.stringify(data));
+      return data;
+    } catch (e: any) {
+      if (this.isNetworkError(e)) {
+        const cached = localStorage.getItem(`offline_sales_${dailyLoadId}`);
+        if (cached) return JSON.parse(cached);
+      }
+      throw e;
+    }
   }
 
   async createSale(sale: { daily_load_id: string; repartidor_id: string; client_id?: string | null; client_name?: string; description?: string; payment_method: string }, items: { product_id: string; quantity: number; unit_price: number }[]) {
@@ -297,25 +340,26 @@ export class SupabaseService {
       return saleData;
     } catch (error: any) {
       // Si falla por problema de red (TypeError, fetch failed, Safari load failed), lo intentamos guardar offline
-      const msg = error?.message?.toLowerCase() || '';
-      const code = error?.code || '';
-      
-      const isNetworkError = 
-        error instanceof TypeError || 
-        code === 'FETCH_ERROR' ||
-        msg.includes('fetch') || 
-        msg.includes('network') ||
-        msg.includes('offline') ||
-        msg.includes('internet') ||
-        msg.includes('load failed') ||
-        msg.includes('connection');
-
-      if (isNetworkError) {
+      if (this.isNetworkError(error)) {
         await this.offlineSync.saveSaleOffline(sale, items);
         return { offline: true };
       }
       throw error;
     }
+  }
+
+  private isNetworkError(error: any): boolean {
+    const msg = error?.message?.toLowerCase() || '';
+    const code = error?.code || '';
+    
+    return error instanceof TypeError || 
+      code === 'FETCH_ERROR' ||
+      msg.includes('fetch') || 
+      msg.includes('network') ||
+      msg.includes('offline') ||
+      msg.includes('internet') ||
+      msg.includes('load failed') ||
+      msg.includes('connection');
   }
 
   // --- Cierre de Jornada (RPC) ---
