@@ -81,9 +81,9 @@ export class RepartidorClosureComponent implements OnInit {
           const salesList = await this.supabase.getSalesByLoad(dailyLoad.id);
 
           // Calcular stock a devolver
-          const inventoryMap = loadItems.map(item => {
+          const inventoryMap = loadItems.map((item: any) => {
             let soldCount = 0;
-            salesList.forEach(sale => {
+            salesList.forEach((sale: any) => {
               sale.sale_items?.forEach((si: any) => {
                 if (si.product_id === item.product_id) {
                   soldCount += si.quantity;
@@ -108,7 +108,7 @@ export class RepartidorClosureComponent implements OnInit {
           let transfer = 0;
           let other = 0;
 
-          salesList.forEach(s => {
+          salesList.forEach((s: any) => {
             const amount = Number(s.total_amount);
             total += amount;
             if (s.payment_method === 'efectivo') {
