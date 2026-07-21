@@ -334,17 +334,16 @@ export class RepartidorSalesComponent implements OnInit {
     this.cart.update(items => items.filter(i => i.productId !== productId));
   }
 
-  setCartItemQuantity(productId: string, qty: number) {
+  setCartItemQuantity(productId: string, qty: any) {
     this.cart.update(items => {
       const existing = items.find(i => i.productId === productId);
       if (existing) {
-        let val = Math.floor(qty);
-        if (val < 0) val = 0;
-        if (val > existing.maxQuantity) val = existing.maxQuantity;
-        
-        if (val === 0) {
-          return items.filter(i => i.productId !== productId);
+        if (qty === null || qty === '' || isNaN(Number(qty))) {
+          existing.quantity = null as any;
         } else {
+          let val = Math.floor(Number(qty));
+          if (val < 0) val = 0;
+          if (val > existing.maxQuantity) val = existing.maxQuantity;
           existing.quantity = val;
         }
       }
@@ -399,15 +398,20 @@ export class RepartidorSalesComponent implements OnInit {
 
       if (!repartidorId || !dailyLoad) throw new Error('No hay jornada activa.');
 
+      const validCartItems = this.cart().filter(c => c.quantity && c.quantity > 0);
+      if (validCartItems.length === 0) {
+        throw new Error('El carrito no tiene productos con cantidad mayor a cero.');
+      }
+
       // Validar stock real
-      this.cart().forEach(cItem => {
+      validCartItems.forEach(cItem => {
         const prod = this.loadedItems().find(p => p.productId === cItem.productId);
         if (prod && cItem.quantity > prod.remaining) {
           throw new Error(`Stock insuficiente para ${prod.name}. Quedan ${prod.remaining}.`);
         }
       });
 
-      const saleItems = this.cart().map(c => ({
+      const saleItems = validCartItems.map(c => ({
         product_id: c.productId,
         quantity: c.quantity,
         unit_price: c.unitPrice
