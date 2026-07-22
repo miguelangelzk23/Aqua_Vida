@@ -280,6 +280,12 @@ export class SupabaseService {
     return data;
   }
 
+  async reloadDailyLoadItems(items: { daily_load_id: string; product_id: string; quantity_loaded: number }[]) {
+    const { error } = await this.client
+      .rpc('reload_daily_load_items', { p_items: items });
+    if (error) throw error;
+  }
+
   // --- Ventas ---
   async getSalesByLoad(dailyLoadId: string) {
     if (!navigator.onLine) {

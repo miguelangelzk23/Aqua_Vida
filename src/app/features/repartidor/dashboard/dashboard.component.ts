@@ -8,7 +8,8 @@ import {
   LucideTruck, 
   LucidePlus, 
   LucidePackage,
-  LucideCheckCircle
+  LucideCheckCircle,
+  LucideX
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -24,7 +25,8 @@ import { FormsModule } from '@angular/forms';
     LucideTruck, 
     LucidePlus, 
     LucidePackage,
-    LucideCheckCircle
+    LucideCheckCircle,
+    LucideX
   ],
   templateUrl: './dashboard.component.html'
 })
@@ -56,6 +58,10 @@ export class RepartidorDashboardComponent implements OnInit {
   // Ventas pendientes offline
   pendingOfflineSales = signal<OfflineSale[]>([]);
 
+  // Para el formulario de recarga
+  showReloadModal = signal<boolean>(false);
+  reloadQuantities: { [productId: string]: number } = {};
+
   ngOnInit() {
     this.loadDashboardData();
   }
@@ -69,6 +75,19 @@ export class RepartidorDashboardComponent implements OnInit {
       // 1. Obtener jornada activa de hoy
       const dailyLoad = await this.supabase.getOpenDailyLoad(repartidorId);
       this.activeLoad.set(dailyLoad);
+
+        // Cargar productos activos e inventario global siempre (para carga inicial o recargas)
+        const prods = await this.supabase.getActiveProducts();
+        this.availableProducts.set(prods);
+
+        const stock = await this.supabase.getGlobalInventory();
+        this.globalInventory.set(stock);
+
+        // Inicializar cantidades de carga inicial a 0
+        prods.forEach(p => {
+          this.loadQuantities[p.id] = 0;
+          this.reloadQuantities[p.id] = 0;
+        });
 
       if (dailyLoad) {
         // 2. Obtener items cargados de la jornada
@@ -87,18 +106,6 @@ export class RepartidorDashboardComponent implements OnInit {
         this.calculateMobileInventory();
         // 5. Calcular resumen de ventas
         this.calculateSalesSummary();
-      } else {
-        // Cargar productos activos e inventario global para formulario de carga inicial
-        const prods = await this.supabase.getActiveProducts();
-        this.availableProducts.set(prods);
-
-        const stock = await this.supabase.getGlobalInventory();
-        this.globalInventory.set(stock);
-
-        // Inicializar cantidades de carga a 0
-        prods.forEach(p => {
-          this.loadQuantities[p.id] = 0;
-        });
       }
     } catch (e) {
       console.error(e);
@@ -260,6 +267,76 @@ export class RepartidorDashboardComponent implements OnInit {
     if (val > max) val = max;
 
     this.loadQuantities[productId] = val;
+    event.target.value = val;
+  }
+  // ==========================================
+  // LÓGICA DE RECARGA
+  // ==========================================
+
+  openReloadModal() {
+    this.availableProducts().forEach(p => {
+      this.reloadQuantities[p.id] = 0;
+    });
+    this.showReloadModal.set(true);
+  }
+
+  closeReloadModal() {
+    this.showReloadModal.set(false);
+    this.loadErrorMessage.set(null);
+  }
+
+  hasSelectedReloadItems(): boolean {
+    return Object.values(this.reloadQuantities).some(qty => qty > 0);
+  }
+
+  async submitReload() {
+    const dailyLoad = this.activeLoad();
+    if (!dailyLoad) return;
+
+    this.actionLoading.set(true);
+    this.loadErrorMessage.set(null);
+
+    try {
+      const itemsToInsert = Object.keys(this.reloadQuantities)
+        .filter(pid => this.reloadQuantities[pid] > 0)
+        .map(pid => {
+          const stockAvailable = this.getProductStock(pid);
+          const requested = this.reloadQuantities[pid];
+          if (requested > stockAvailable) {
+            throw new Error(`Stock insuficiente en bodega para cargar. Solicitado: ${requested}, Disponible: ${stockAvailable}`);
+          }
+
+          return {
+            daily_load_id: dailyLoad.id,
+            product_id: pid,
+            quantity_loaded: requested
+          };
+        });
+
+      if (itemsToInsert.length === 0) {
+        this.closeReloadModal();
+        return;
+      }
+
+      await this.supabase.reloadDailyLoadItems(itemsToInsert);
+      this.closeReloadModal();
+      await this.loadDashboardData();
+    } catch (e: any) {
+      console.error(e);
+      this.loadErrorMessage.set(e.message || 'Error al registrar la recarga en el vehículo.');
+    } finally {
+      this.actionLoading.set(false);
+    }
+  }
+
+  updateReloadQuantity(productId: string, event: any) {
+    let val = parseInt(event.target.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    
+    const max = this.getProductStock(productId);
+    if (val > max) val = max;
+
+    this.reloadQuantities[productId] = val;
     event.target.value = val;
   }
 }
