@@ -8,7 +8,9 @@ import {
   LucideDollarSign,
   LucideTruck,
   LucideRefreshCw,
-  LucideFilter
+  LucideFilter,
+  LucideBanknote,
+  LucideSmartphone
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +28,8 @@ import { FormsModule } from '@angular/forms';
     LucideTruck,
     LucideRefreshCw,
     LucideFilter,
+    LucideBanknote,
+    LucideSmartphone,
     FormsModule
   ],
   template: `
@@ -262,6 +266,21 @@ import { FormsModule } from '@angular/forms';
                     <div>
                       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Facturado</span>
                       <span class="text-2xl font-black text-indigo-600">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</span>
+                      
+                      <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2">
+                        <div>
+                          <span class="block text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1"><svg lucideBanknote class="w-3 h-3"></svg> Efectivo</span>
+                          <span class="block text-sm font-black text-emerald-600 mt-0.5">&#36;{{ row.cash_amount || 0 | number:'1.2-2' }}</span>
+                        </div>
+                        <div>
+                          <span class="block text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1"><svg lucideSmartphone class="w-3 h-3"></svg> Transf.</span>
+                          <span class="block text-sm font-black text-blue-600 mt-0.5">&#36;{{ row.transfer_amount || 0 | number:'1.2-2' }}</span>
+                        </div>
+                        <div>
+                          <span class="block text-[9px] font-bold text-slate-400 uppercase">Otros</span>
+                          <span class="block text-sm font-black text-slate-600 mt-0.5">&#36;{{ row.other_amount || 0 | number:'1.2-2' }}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 } @empty {
@@ -275,7 +294,8 @@ import { FormsModule } from '@angular/forms';
                   <thead>
                     <tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
                       <th class="py-3 pr-4">Repartidor</th>
-                      <th class="py-3 px-4">Ventas Concretadas</th>
+                      <th class="py-3 px-4 text-center">Ventas</th>
+                      <th class="py-3 px-4">Desglose de Ingresos</th>
                       <th class="py-3 pl-4 text-right">Total Facturado</th>
                     </tr>
                   </thead>
@@ -290,8 +310,26 @@ import { FormsModule } from '@angular/forms';
                             <span>{{ row.repartidor_name }}</span>
                           </div>
                         </td>
-                        <td class="py-4 px-4 font-semibold text-slate-600">
-                          <span class="bg-slate-100 px-2.5 py-1 rounded-md">{{ row.total_sales_count }} ventas</span>
+                        <td class="py-4 px-4 font-semibold text-slate-600 text-center">
+                          <span class="bg-slate-100 px-2.5 py-1 rounded-md">{{ row.total_sales_count }}</span>
+                        </td>
+                        <td class="py-4 px-4">
+                          <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100">
+                              <svg lucideBanknote class="w-3.5 h-3.5"></svg>
+                              <span class="text-xs font-black">&#36;{{ row.cash_amount || 0 | number:'1.2-2' }}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100">
+                              <svg lucideSmartphone class="w-3.5 h-3.5"></svg>
+                              <span class="text-xs font-black">&#36;{{ row.transfer_amount || 0 | number:'1.2-2' }}</span>
+                            </div>
+                            @if (row.other_amount && row.other_amount > 0) {
+                              <div class="flex items-center gap-1.5 bg-slate-50 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200">
+                                <span class="text-[10px] font-bold uppercase tracking-wider">Otros:</span>
+                                <span class="text-xs font-black">&#36;{{ row.other_amount | number:'1.2-2' }}</span>
+                              </div>
+                            }
+                          </div>
                         </td>
                         <td class="py-4 pl-4 text-right font-black text-indigo-600 text-lg">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</td>
                       </tr>
