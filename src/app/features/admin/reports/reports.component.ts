@@ -164,12 +164,12 @@ import { FormsModule } from '@angular/forms';
                     <svg lucideDollarSign class="w-24 h-24 transform translate-x-4 -translate-y-4"></svg>
                   </div>
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-cyan-100 mb-1">Ingresos Totales (Periodo)</span>
-                  <span class="text-3xl font-black">&#36;{{ kpis.totalRevenue | number:'1.2-2' }}</span>
+                  <span class="text-3xl font-black">&#36;{{ kpis.totalRevenue | number:'1.0-0' }}</span>
                 </div>
                 
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Promedio Diario</span>
-                  <span class="text-2xl font-black text-slate-800">&#36;{{ kpis.avgRevenue | number:'1.2-2' }}</span>
+                  <span class="text-2xl font-black text-slate-800">&#36;{{ kpis.avgRevenue | number:'1.0-0' }}</span>
                 </div>
 
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
@@ -192,7 +192,7 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     <div>
                       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ingresos del Día</span>
-                      <span class="text-2xl font-black text-cyan-600">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</span>
+                      <span class="text-2xl font-black text-cyan-600">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</span>
                     </div>
                   </div>
                 } @empty {
@@ -217,7 +217,7 @@ import { FormsModule } from '@angular/forms';
                         <td class="py-4 px-4 font-semibold text-slate-600">
                           <span class="bg-slate-100 px-2.5 py-1 rounded-md">{{ row.total_sales_count }} ventas</span>
                         </td>
-                        <td class="py-4 pl-4 text-right font-black text-cyan-600 text-lg">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</td>
+                        <td class="py-4 pl-4 text-right font-black text-cyan-600 text-lg">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</td>
                       </tr>
                     } @empty {
                       <tr>
@@ -242,12 +242,12 @@ import { FormsModule } from '@angular/forms';
                   </div>
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-indigo-100 mb-1">Mejor Vendedor</span>
                   <span class="text-2xl font-black mb-1 truncate">{{ kpis.topSeller || 'N/A' }}</span>
-                  <span class="text-sm font-semibold text-indigo-200">&#36;{{ kpis.topSellerRevenue || 0 | number:'1.2-2' }} recaudado</span>
+                  <span class="text-sm font-semibold text-indigo-200">&#36;{{ kpis.topSellerRevenue || 0 | number:'1.0-0' }} recaudado</span>
                 </div>
                 
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Global Facturado</span>
-                  <span class="text-3xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.2-2' }}</span>
+                  <span class="text-3xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.0-0' }}</span>
                 </div>
               </div>
             }
@@ -265,20 +265,20 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     <div>
                       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Facturado</span>
-                      <span class="text-2xl font-black text-indigo-600">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</span>
+                      <span class="text-2xl font-black text-indigo-600">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</span>
                       
                       <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2">
                         <div>
                           <span class="block text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1"><svg lucideBanknote class="w-3 h-3"></svg> Efectivo</span>
-                          <span class="block text-sm font-black text-emerald-600 mt-0.5">&#36;{{ row.cash_amount || 0 | number:'1.2-2' }}</span>
+                          <span class="block text-sm font-black text-emerald-600 mt-0.5">&#36;{{ row.cash_amount || 0 | number:'1.0-0' }}</span>
                         </div>
                         <div>
                           <span class="block text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1"><svg lucideSmartphone class="w-3 h-3"></svg> Transf.</span>
-                          <span class="block text-sm font-black text-blue-600 mt-0.5">&#36;{{ row.transfer_amount || 0 | number:'1.2-2' }}</span>
+                          <span class="block text-sm font-black text-blue-600 mt-0.5">&#36;{{ row.transfer_amount || 0 | number:'1.0-0' }}</span>
                         </div>
                         <div>
                           <span class="block text-[9px] font-bold text-slate-400 uppercase">Otros</span>
-                          <span class="block text-sm font-black text-slate-600 mt-0.5">&#36;{{ row.other_amount || 0 | number:'1.2-2' }}</span>
+                          <span class="block text-sm font-black text-slate-600 mt-0.5">&#36;{{ row.other_amount || 0 | number:'1.0-0' }}</span>
                         </div>
                       </div>
                     </div>
@@ -317,21 +317,21 @@ import { FormsModule } from '@angular/forms';
                           <div class="flex flex-wrap items-center gap-2">
                             <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100">
                               <svg lucideBanknote class="w-3.5 h-3.5"></svg>
-                              <span class="text-xs font-black">&#36;{{ row.cash_amount || 0 | number:'1.2-2' }}</span>
+                              <span class="text-xs font-black">&#36;{{ row.cash_amount || 0 | number:'1.0-0' }}</span>
                             </div>
                             <div class="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100">
                               <svg lucideSmartphone class="w-3.5 h-3.5"></svg>
-                              <span class="text-xs font-black">&#36;{{ row.transfer_amount || 0 | number:'1.2-2' }}</span>
+                              <span class="text-xs font-black">&#36;{{ row.transfer_amount || 0 | number:'1.0-0' }}</span>
                             </div>
                             @if (row.other_amount && row.other_amount > 0) {
                               <div class="flex items-center gap-1.5 bg-slate-50 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200">
                                 <span class="text-[10px] font-bold uppercase tracking-wider">Otros:</span>
-                                <span class="text-xs font-black">&#36;{{ row.other_amount | number:'1.2-2' }}</span>
+                                <span class="text-xs font-black">&#36;{{ row.other_amount | number:'1.0-0' }}</span>
                               </div>
                             }
                           </div>
                         </td>
-                        <td class="py-4 pl-4 text-right font-black text-indigo-600 text-lg">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</td>
+                        <td class="py-4 pl-4 text-right font-black text-indigo-600 text-lg">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</td>
                       </tr>
                     } @empty {
                       <tr>
@@ -366,7 +366,7 @@ import { FormsModule } from '@angular/forms';
 
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Recaudación Global</span>
-                  <span class="text-2xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.2-2' }}</span>
+                  <span class="text-2xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.0-0' }}</span>
                 </div>
               </div>
             }
@@ -387,7 +387,7 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     <div>
                       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Recaudado</span>
-                      <span class="text-2xl font-black text-emerald-600">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</span>
+                      <span class="text-2xl font-black text-emerald-600">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</span>
                     </div>
                   </div>
                 } @empty {
@@ -412,7 +412,7 @@ import { FormsModule } from '@angular/forms';
                         <td class="py-4 pr-4 font-bold text-slate-800">{{ row.product_name }}</td>
                         <td class="py-4 px-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">{{ row.product_unit }}</td>
                         <td class="py-4 px-4 font-black text-emerald-600 text-center text-lg">{{ row.total_quantity_sold }}</td>
-                        <td class="py-4 pl-4 text-right font-black text-slate-900 text-lg">&#36;{{ row.total_sales_amount | number:'1.2-2' }}</td>
+                        <td class="py-4 pl-4 text-right font-black text-slate-900 text-lg">&#36;{{ row.total_sales_amount | number:'1.0-0' }}</td>
                       </tr>
                     } @empty {
                       <tr>
@@ -441,7 +441,7 @@ import { FormsModule } from '@angular/forms';
                 
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
                   <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Ingresos (Todos los métodos)</span>
-                  <span class="text-3xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.2-2' }}</span>
+                  <span class="text-3xl font-black text-slate-800">&#36;{{ kpis.totalRevenue | number:'1.0-0' }}</span>
                 </div>
               </div>
             }
@@ -468,7 +468,7 @@ import { FormsModule } from '@angular/forms';
                     </div>
                     <div>
                       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Monto Recibido</span>
-                      <span class="text-2xl font-black text-slate-900">&#36;{{ row.total_amount | number:'1.2-2' }}</span>
+                      <span class="text-2xl font-black text-slate-900">&#36;{{ row.total_amount | number:'1.0-0' }}</span>
                     </div>
                   </div>
                 } @empty {
@@ -502,7 +502,7 @@ import { FormsModule } from '@angular/forms';
                           </span>
                         </td>
                         <td class="py-4 px-4 font-semibold text-slate-600 text-base">{{ row.sales_count }} transacciones</td>
-                        <td class="py-4 pl-4 text-right font-black text-slate-900 text-lg">&#36;{{ row.total_amount | number:'1.2-2' }}</td>
+                        <td class="py-4 pl-4 text-right font-black text-slate-900 text-lg">&#36;{{ row.total_amount | number:'1.0-0' }}</td>
                       </tr>
                     } @empty {
                       <tr>
