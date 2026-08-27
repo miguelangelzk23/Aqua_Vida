@@ -32,6 +32,7 @@ CREATE TABLE public.products (
     name TEXT NOT NULL UNIQUE,
     base_price NUMERIC(10,2) NOT NULL CHECK (base_price >= 0),
     unit TEXT NOT NULL, -- Ej: 'Bolsa 5L', 'Botellón 20L', 'Paquete x6', etc. (Flexible)
+    price_options NUMERIC(10,2)[] NOT NULL DEFAULT '{}'::NUMERIC[],
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
