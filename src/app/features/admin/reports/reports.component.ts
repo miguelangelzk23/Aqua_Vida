@@ -434,6 +434,77 @@ import { FormsModule } from '@angular/forms';
                 </table>
               </div>
             </div>
+
+            <!-- NUEVA SECCIÓN: DESGLOSE DETALLADO -->
+            <div class="mt-10 space-y-4">
+              <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-2">Desglose Detallado (Por Precio y Repartidor)</h3>
+              
+              @for (group of groupedProductBreakdown(); track group.productName) {
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm mb-4">
+                  <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <span class="font-black text-slate-800 text-sm">{{ group.productName }}</span>
+                  </div>
+                  
+                  <!-- Vista Móvil para Desglose -->
+                  <div class="md:hidden grid grid-cols-1 gap-3 p-3 bg-slate-50/50">
+                    @for (item of group.items; track item.repartidor_id + item.unit_price) {
+                      <div class="bg-white border border-slate-150 rounded-xl p-3.5 shadow-sm">
+                        <div class="flex items-center gap-2 border-b border-slate-100 pb-2.5 mb-2.5">
+                          <div class="w-7 h-7 rounded-full bg-cyan-50 text-cyan-700 flex items-center justify-center text-[11px] font-black shrink-0">
+                            {{ item.repartidor_name.charAt(0) }}
+                          </div>
+                          <span class="font-bold text-slate-700 text-xs truncate">{{ item.repartidor_name }}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                          <div class="bg-slate-50 rounded-lg py-2 px-1 flex flex-col justify-center">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Precio</span>
+                            <span class="text-xs font-black text-slate-800">&#36;{{ item.unit_price | number:'1.0-0' }}</span>
+                          </div>
+                          <div class="bg-cyan-50 rounded-lg py-2 px-1 flex flex-col justify-center border border-cyan-100/50">
+                            <span class="text-[9px] font-bold text-cyan-600/70 uppercase tracking-wider mb-0.5">Vendidos</span>
+                            <span class="text-sm font-black text-cyan-700">{{ item.total_quantity }}</span>
+                          </div>
+                          <div class="bg-emerald-50 rounded-lg py-2 px-1 flex flex-col justify-center border border-emerald-100/50">
+                            <span class="text-[9px] font-bold text-emerald-600/70 uppercase tracking-wider mb-0.5">Total</span>
+                            <span class="text-xs font-black text-emerald-700">&#36;{{ item.total_amount | number:'1.0-0' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Vista Desktop para Desglose -->
+                  <div class="hidden md:block">
+                    <table class="w-full text-left border-collapse">
+                      <thead>
+                        <tr class="border-b border-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider bg-slate-50/50">
+                          <th class="py-2.5 px-5">Repartidor</th>
+                          <th class="py-2.5 px-5 text-right">Precio de Venta</th>
+                          <th class="py-2.5 px-5 text-right">Cant. Vendida</th>
+                          <th class="py-2.5 px-5 text-right">Total Recaudado</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-50 text-xs">
+                        @for (item of group.items; track item.repartidor_id + item.unit_price) {
+                          <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-3 px-5 font-bold text-slate-700 flex items-center gap-2">
+                              <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px]">{{ item.repartidor_name.charAt(0) }}</div>
+                              {{ item.repartidor_name }}
+                            </td>
+                            <td class="py-3 px-5 text-right font-black text-slate-800">&#36;{{ item.unit_price | number:'1.0-0' }}</td>
+                            <td class="py-3 px-5 text-right font-bold text-cyan-600">{{ item.total_quantity }}</td>
+                            <td class="py-3 px-5 text-right font-black text-blue-600">&#36;{{ item.total_amount | number:'1.0-0' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              } @empty {
+                 <div class="text-center py-6 text-sm text-slate-400 font-medium bg-slate-50 rounded-2xl border border-slate-100">No hay detalles de ventas para mostrar.</div>
+              }
+            </div>
           }
 
           <!-- PESTAÑA: MÉTODOS DE PAGO -->
@@ -766,6 +837,7 @@ export class AdminReportsComponent implements OnInit {
   dayReport = signal<any[]>([]);
   repartidorReport = signal<any[]>([]);
   productReport = signal<any[]>([]);
+  productBreakdownReport = signal<any[]>([]);
   paymentReport = signal<any[]>([]);
   comparisonReport = signal<any[]>([]);
   bottlesReport = signal<any[]>([]);
@@ -825,6 +897,26 @@ export class AdminReportsComponent implements OnInit {
     const totalRevenue = data.reduce((sum, row) => sum + Number(row.total_sales_amount), 0);
     const topProduct = [...data].sort((a, b) => Number(b.total_quantity_sold) - Number(a.total_quantity_sold))[0];
     return { totalUnits, totalRevenue, topProduct: topProduct.product_name, topProductUnits: topProduct.total_quantity_sold };
+  });
+
+  groupedProductBreakdown = computed(() => {
+    const data = this.productBreakdownReport();
+    if (!data.length) return [];
+    
+    // Agrupar por nombre de producto
+    const groups = new Map<string, any[]>();
+    data.forEach(row => {
+      const pName = row.product_name;
+      if (!groups.has(pName)) {
+        groups.set(pName, []);
+      }
+      groups.get(pName)!.push(row);
+    });
+    
+    return Array.from(groups.entries()).map(([productName, items]) => ({
+      productName,
+      items
+    }));
   });
 
   paymentKPIs = computed(() => {
@@ -966,6 +1058,8 @@ export class AdminReportsComponent implements OnInit {
       } else if (tab === 'product') {
         const data = await this.supabase.getReportSalesByProduct(startDate, endDate);
         this.productReport.set(data || []);
+        const breakdownData = await this.supabase.getReportSalesBreakdown(startDate, endDate);
+        this.productBreakdownReport.set(breakdownData || []);
       } else if (tab === 'payment') {
         const data = await this.supabase.getReportPaymentMethods(startDate, endDate);
         this.paymentReport.set(data || []);

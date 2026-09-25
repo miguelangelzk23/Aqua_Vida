@@ -429,6 +429,17 @@ export class SupabaseService {
     return data;
   }
 
+  async getReportSalesBreakdown(startDate?: string, endDate?: string) {
+    const { data, error } = await this.client
+      .rpc('get_report_sales_breakdown_by_product_price_repartidor', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
+    if (error) throw error;
+    return data;
+  }
+
   async getReportPaymentMethods(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
       .rpc('get_report_payment_methods', {
