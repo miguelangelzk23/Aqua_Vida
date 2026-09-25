@@ -69,93 +69,126 @@
 
     <!-- CASO 3: JORNADA ABIERTA (FORMULARIO PARA EJECUTAR CIERRE) -->
     @else {
-      <!-- Comparativa de Inventario de Cierre -->
-      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-        <h3 class="font-extrabold text-slate-850 text-xs uppercase tracking-wider border-b border-slate-100 pb-3">Devoluciones a Bodega</h3>
-        
-        <div class="divide-y divide-slate-100">
-          @for (item of mobileInventory(); track item.productId) {
-            <div class="py-3.5 flex items-center justify-between">
-              <div>
-                <h4 class="text-xs font-black text-slate-800 leading-tight">{{ item.name }}</h4>
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">{{ item.unit }}</span>
+      @if (closureStep() === 1) {
+        <!-- PASO 1: Envases devueltos -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-sm space-y-6">
+          <div class="w-16 h-16 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <svg lucidePackage class="w-8 h-8"></svg>
+          </div>
+          <div class="max-w-xs mx-auto">
+            <h3 class="text-lg font-black text-slate-800">Envases devueltos a bodega</h3>
+            <p class="text-xs text-slate-500 mt-2 font-medium leading-relaxed">Antes de continuar con el cierre, ingresa la cantidad de envases vacíos que estás devolviendo.</p>
+          </div>
+          <input 
+            type="number"
+            [ngModel]="returnedBottlesInput()"
+            (ngModelChange)="returnedBottlesInput.set($event)"
+            min="0"
+            class="w-32 mx-auto bg-white border-2 border-slate-200 text-slate-850 text-center text-3xl font-black rounded-2xl px-4 py-4 focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none transition-all shadow-sm"
+            placeholder="0"
+          >
+          <button 
+            (click)="closureStep.set(2)"
+            [disabled]="returnedBottlesInput() === null || returnedBottlesInput()! < 0"
+            class="w-full px-6 py-4 bg-slate-800 hover:bg-slate-700 text-white font-extrabold rounded-2xl shadow-lg shadow-slate-900/20 active:scale-95 transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+          >
+            Continuar al Resumen
+          </button>
+        </div>
+      } @else {
+        <!-- Botón Volver -->
+        <button (click)="closureStep.set(1)" class="text-xs text-slate-500 font-bold flex items-center hover:text-slate-800 transition-colors cursor-pointer w-fit px-2 py-1 bg-slate-100 rounded-lg">
+          &larr; Cambiar Envases Devueltos
+        </button>
+
+        <!-- Comparativa de Inventario de Cierre -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4 mt-4">
+          <h3 class="font-extrabold text-slate-850 text-xs uppercase tracking-wider border-b border-slate-100 pb-3">Devoluciones a Bodega</h3>
+          
+          <div class="divide-y divide-slate-100">
+            @for (item of mobileInventory(); track item.productId) {
+              <div class="py-3.5 flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-black text-slate-800 leading-tight">{{ item.name }}</h4>
+                  <span class="text-[10px] text-slate-400 font-semibold uppercase">{{ item.unit }}</span>
+                </div>
+                <div class="flex space-x-3 text-right">
+                  <div class="bg-slate-50 px-2 py-0.5 rounded-lg text-center">
+                    <span class="block text-[8px] text-slate-400 font-bold uppercase">Cargado</span>
+                    <span class="block text-[11px] font-bold text-slate-700">{{ item.loaded }}</span>
+                  </div>
+                  <div class="bg-blue-50 px-2 py-0.5 rounded-lg text-center">
+                    <span class="block text-[8px] text-blue-400 font-bold uppercase">Vendido</span>
+                    <span class="block text-[11px] font-bold text-blue-600">{{ item.sold }}</span>
+                  </div>
+                  <div class="bg-red-50 px-2 py-0.5 rounded-lg text-center border border-red-100">
+                    <span class="block text-[8px] text-red-400 font-bold uppercase">Devuelve</span>
+                    <span class="block text-xs font-black text-red-650">{{ item.remaining }}</span>
+                  </div>
+                </div>
               </div>
-              <div class="flex space-x-3 text-right">
-                <div class="bg-slate-50 px-2 py-0.5 rounded-lg text-center">
-                  <span class="block text-[8px] text-slate-400 font-bold uppercase">Cargado</span>
-                  <span class="block text-[11px] font-bold text-slate-700">{{ item.loaded }}</span>
-                </div>
-                <div class="bg-blue-50 px-2 py-0.5 rounded-lg text-center">
-                  <span class="block text-[8px] text-blue-400 font-bold uppercase">Vendido</span>
-                  <span class="block text-[11px] font-bold text-blue-600">{{ item.sold }}</span>
-                </div>
-                <div class="bg-red-50 px-2 py-0.5 rounded-lg text-center border border-red-100">
-                  <span class="block text-[8px] text-red-400 font-bold uppercase">Devuelve</span>
-                  <span class="block text-xs font-black text-red-650">{{ item.remaining }}</span>
-                </div>
-              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Resumen de Caja a Entregar -->
+        <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-3xl p-6 shadow-xl shadow-blue-900/20 space-y-5">
+          <h3 class="font-extrabold text-xs uppercase tracking-wider text-cyan-400 border-b border-sky-800/50 pb-2">Arqueo Financiero del Día</h3>
+          
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
+              <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">💵 Efectivo</span>
+              <span class="text-sm font-extrabold text-white">&#36;{{ salesCash() | number:'1.0-0' }}</span>
+            </div>
+            <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
+              <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">📱 Transfer</span>
+              <span class="text-sm font-extrabold text-white">&#36;{{ salesTransfer() | number:'1.0-0' }}</span>
+            </div>
+            <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
+              <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">💳 Otro</span>
+              <span class="text-sm font-extrabold text-white">&#36;{{ salesOther() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center border-t border-sky-800/50 pt-4">
+            <span class="font-extrabold text-xs text-sky-300 uppercase tracking-wider">Total a Liquidar</span>
+            <span class="text-2xl font-black text-cyan-400">&#36;{{ salesTotal() | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Formulario de observaciones y Botón Cierre -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Observaciones del Cierre</label>
+            <textarea 
+              [(ngModel)]="observations"
+              placeholder="Escribe alguna novedad, entrega de dinero parcial, descuadres, etc. (Opcional)"
+              rows="3"
+              class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-semibold shadow-inner"
+            ></textarea>
+          </div>
+
+          @if (errorMessage()) {
+            <div class="p-3.5 bg-red-500/10 border border-red-500/20 text-red-700 rounded-xl text-xs font-semibold animate-pulse">
+              {{ errorMessage() }}
             </div>
           }
+
+          <button 
+            (click)="confirmClosure()"
+            [disabled]="actionLoading()"
+            class="w-full py-4.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-2xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+          >
+            @if (actionLoading()) {
+              <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>Cerrando Jornada...</span>
+            } @else {
+              <svg lucideClipboardCheck class="w-5 h-5"></svg>
+              <span>Confirmar Cierre de Jornada</span>
+            }
+          </button>
         </div>
-      </div>
-
-      <!-- Resumen de Caja a Entregar -->
-      <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white rounded-3xl p-6 shadow-xl shadow-blue-900/20 space-y-5">
-        <h3 class="font-extrabold text-xs uppercase tracking-wider text-cyan-400 border-b border-sky-800/50 pb-2">Arqueo Financiero del Día</h3>
-        
-        <div class="grid grid-cols-3 gap-2">
-          <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
-            <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">💵 Efectivo</span>
-            <span class="text-sm font-extrabold text-white">&#36;{{ salesCash() | number:'1.0-0' }}</span>
-          </div>
-          <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
-            <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">📱 Transfer</span>
-            <span class="text-sm font-extrabold text-white">&#36;{{ salesTransfer() | number:'1.0-0' }}</span>
-          </div>
-          <div class="bg-white/5 p-3 rounded-2xl border border-sky-500/20 text-center shadow-inner">
-            <span class="block text-[9px] text-sky-200 font-bold uppercase mb-1">💳 Otro</span>
-            <span class="text-sm font-extrabold text-white">&#36;{{ salesOther() | number:'1.0-0' }}</span>
-          </div>
-        </div>
-
-        <div class="flex justify-between items-center border-t border-sky-800/50 pt-4">
-          <span class="font-extrabold text-xs text-sky-300 uppercase tracking-wider">Total a Liquidar</span>
-          <span class="text-2xl font-black text-cyan-400">&#36;{{ salesTotal() | number:'1.0-0' }}</span>
-        </div>
-      </div>
-
-      <!-- Formulario de observaciones y Botón Cierre -->
-      <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-5">
-        <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Observaciones del Cierre</label>
-          <textarea 
-            [(ngModel)]="observations"
-            placeholder="Escribe alguna novedad, entrega de dinero parcial, descuadres, etc. (Opcional)"
-            rows="3"
-            class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-semibold shadow-inner"
-          ></textarea>
-        </div>
-
-        @if (errorMessage()) {
-          <div class="p-3.5 bg-red-500/10 border border-red-500/20 text-red-700 rounded-xl text-xs font-semibold animate-pulse">
-            {{ errorMessage() }}
-          </div>
-        }
-
-        <button 
-          (click)="confirmClosure()"
-          [disabled]="actionLoading()"
-          class="w-full py-4.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-2xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-        >
-          @if (actionLoading()) {
-            <span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            <span>Cerrando Jornada...</span>
-          } @else {
-            <svg lucideClipboardCheck class="w-5 h-5"></svg>
-            <span>Confirmar Cierre de Jornada</span>
-          }
-        </button>
-      </div>
+      }
     }
   }
 

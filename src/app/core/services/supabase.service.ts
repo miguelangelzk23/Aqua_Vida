@@ -280,9 +280,9 @@ export class SupabaseService {
     return data;
   }
 
-  async reloadDailyLoadItems(items: { daily_load_id: string; product_id: string; quantity_loaded: number }[]) {
+  async reloadDailyLoadItems(items: { daily_load_id: string; product_id: string; quantity_loaded: number }[], returnedBottles: number = 0) {
     const { error } = await this.client
-      .rpc('reload_daily_load_items', { p_items: items });
+      .rpc('reload_daily_load_items', { p_items: items, p_returned_bottles: returnedBottles });
     if (error) throw error;
   }
 
@@ -369,11 +369,12 @@ export class SupabaseService {
   }
 
   // --- Cierre de Jornada (RPC) ---
-  async closeDailyLoad(dailyLoadId: string, observations?: string) {
+  async closeDailyLoad(dailyLoadId: string, observations?: string, returnedBottles: number = 0) {
     const { data, error } = await this.client
       .rpc('close_daily_load', {
         p_daily_load_id: dailyLoadId,
-        p_observations: observations || null
+        p_observations: observations || null,
+        p_returned_bottles: returnedBottles
       });
     if (error) throw error;
     return data;
@@ -442,6 +443,17 @@ export class SupabaseService {
   async getReportLoadVsSoldVsRemaining(startDate?: string, endDate?: string) {
     const { data, error } = await this.client
       .rpc('get_report_load_vs_sold', {
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_tz: this.getUserTimezone()
+      });
+    if (error) throw error;
+    return data;
+  }
+
+  async getReportReturnedBottlesByRepartidor(startDate?: string, endDate?: string) {
+    const { data, error } = await this.client
+      .rpc('get_report_returned_bottles_by_repartidor', {
         p_start_date: startDate || null,
         p_end_date: endDate || null,
         p_tz: this.getUserTimezone()
