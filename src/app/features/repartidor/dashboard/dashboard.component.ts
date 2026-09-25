@@ -60,6 +60,8 @@ export class RepartidorDashboardComponent implements OnInit {
 
   // Para el formulario de recarga
   showReloadModal = signal<boolean>(false);
+  reloadStep = signal<1 | 2>(1);
+  returnedBottlesInput = signal<number | null>(null);
   reloadQuantities: { [productId: string]: number } = {};
 
   ngOnInit() {
@@ -274,6 +276,8 @@ export class RepartidorDashboardComponent implements OnInit {
   // ==========================================
 
   openReloadModal() {
+    this.reloadStep.set(1);
+    this.returnedBottlesInput.set(null);
     this.availableProducts().forEach(p => {
       this.reloadQuantities[p.id] = 0;
     });
@@ -318,7 +322,8 @@ export class RepartidorDashboardComponent implements OnInit {
         return;
       }
 
-      await this.supabase.reloadDailyLoadItems(itemsToInsert);
+      const returned = this.returnedBottlesInput() || 0;
+      await this.supabase.reloadDailyLoadItems(itemsToInsert, returned);
       this.closeReloadModal();
       await this.loadDashboardData();
     } catch (e: any) {

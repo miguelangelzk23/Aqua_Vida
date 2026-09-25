@@ -34,6 +34,8 @@ export class RepartidorClosureComponent implements OnInit {
   activeLoad = signal<any>(null);
   mobileInventory = signal<any[]>([]);
   closureData = signal<any>(null);
+  closureStep = signal<1 | 2>(1);
+  returnedBottlesInput = signal<number | null>(null);
 
   // Totales de venta
   salesCash = signal<number>(0);
@@ -145,14 +147,15 @@ export class RepartidorClosureComponent implements OnInit {
 
   async executeClosure() {
     const dailyLoad = this.activeLoad();
-    if (!dailyLoad || dailyLoad.status === 'closed') return;
+    if (!dailyLoad) return;
 
-    this.showConfirmModal.set(false);
     this.actionLoading.set(true);
     this.errorMessage.set(null);
 
     try {
-      await this.supabase.closeDailyLoad(dailyLoad.id, this.observations);
+      const returned = this.returnedBottlesInput() || 0;
+      await this.supabase.closeDailyLoad(dailyLoad.id, this.observations, returned);
+      this.closeConfirmModal();
       await this.loadClosureData();
     } catch (e: any) {
       console.error(e);

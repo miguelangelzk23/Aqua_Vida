@@ -10,7 +10,8 @@ import {
   LucideRefreshCw,
   LucideFilter,
   LucideBanknote,
-  LucideSmartphone
+  LucideSmartphone,
+  LucidePackage
 } from '@lucide/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -30,6 +31,7 @@ import { FormsModule } from '@angular/forms';
     LucideFilter,
     LucideBanknote,
     LucideSmartphone,
+    LucidePackage,
     FormsModule
   ],
   template: `
@@ -140,6 +142,15 @@ import { FormsModule } from '@angular/forms';
         >
           <svg lucideTruck class="w-4 h-4"></svg>
           <span>Arqueo (Carga vs Venta)</span>
+        </button>
+
+        <button 
+          (click)="selectTab('bottles')"
+          [class]="activeTab() === 'bottles' ? 'bg-slate-900 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'"
+          class="flex items-center space-x-2 py-2.5 px-5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap shrink-0"
+        >
+          <svg lucidePackage class="w-4 h-4"></svg>
+          <span>Envases</span>
         </button>
       </div>
 
@@ -663,6 +674,76 @@ import { FormsModule } from '@angular/forms';
             </div>
           }
 
+          <!-- PESTAÑA: ENVASES DEVUELTOS -->
+          @else if (activeTab() === 'bottles') {
+            <!-- KPIs -->
+            @if (bottlesKPIs(); as kpis) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-gradient-to-br from-cyan-600 to-blue-700 rounded-2xl p-5 text-white shadow-md relative overflow-hidden">
+                  <div class="absolute right-0 top-0 opacity-20">
+                    <svg lucidePackage class="w-24 h-24 transform translate-x-4 -translate-y-4"></svg>
+                  </div>
+                  <span class="block text-[10px] font-bold uppercase tracking-wider text-cyan-100 mb-1">Total Global Devuelto</span>
+                  <span class="text-3xl font-black mb-1 truncate">{{ kpis.totalBottles }}</span>
+                  <span class="text-sm font-semibold text-cyan-100">Envases en total</span>
+                </div>
+                
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-inner">
+                  <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Mayor Devolución</span>
+                  <span class="text-2xl font-black text-slate-800">{{ kpis.topRepartidor || 'N/A' }}</span>
+                  <span class="block text-sm font-bold text-slate-500 mt-1">{{ kpis.topBottles || 0 }} envases</span>
+                </div>
+              </div>
+            }
+
+            <div class="space-y-4">
+              <h3 class="font-bold text-slate-800 text-base border-b border-slate-100 pb-2">Devoluciones por Repartidor</h3>
+              
+              <!-- Vista Móvil -->
+              <div class="grid grid-cols-1 gap-3 md:hidden">
+                @for (row of bottlesReport(); track row.repartidor_id) {
+                  <div class="bg-white border border-slate-150 rounded-2xl p-5 shadow-sm flex justify-between items-center">
+                    <span class="font-bold text-slate-800">{{ row.repartidor_name }}</span>
+                    <span class="text-lg font-black text-cyan-600">{{ row.total_returned_bottles }} envases</span>
+                  </div>
+                } @empty {
+                  <div class="text-center py-6 text-sm text-slate-400 font-medium bg-slate-50 rounded-2xl border border-slate-100">No hay registros de envases devueltos.</div>
+                }
+              </div>
+              
+              <!-- Vista Desktop -->
+              <div class="hidden md:block overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                      <th class="py-3 pr-4">Repartidor</th>
+                      <th class="py-3 pl-4 text-right">Envases Devueltos</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 text-sm">
+                    @for (row of bottlesReport(); track row.repartidor_id) {
+                      <tr class="hover:bg-slate-50/50">
+                        <td class="py-4 pr-4 font-bold text-slate-800">
+                          <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center font-black text-xs">
+                              {{ row.repartidor_name.charAt(0) }}
+                            </div>
+                            <span>{{ row.repartidor_name }}</span>
+                          </div>
+                        </td>
+                        <td class="py-4 pl-4 text-right font-black text-cyan-600 text-lg">{{ row.total_returned_bottles }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="2" class="text-center py-8 text-slate-400 font-medium">No hay registros de envases devueltos.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+
         </div>
 
       }
@@ -674,7 +755,7 @@ export class AdminReportsComponent implements OnInit {
   private supabase = inject(SupabaseService);
 
   loading = signal<boolean>(true);
-  activeTab = signal<'day' | 'repartidor' | 'product' | 'payment' | 'comparison'>('day');
+  activeTab = signal<'day' | 'repartidor' | 'product' | 'payment' | 'comparison' | 'bottles'>('day');
 
   // Filtros de fecha
   dateFilter = signal<'today' | 'yesterday' | '7days' | 'this_week' | 'this_month' | '30days' | 'all_time' | 'custom'>('today');
@@ -687,6 +768,7 @@ export class AdminReportsComponent implements OnInit {
   productReport = signal<any[]>([]);
   paymentReport = signal<any[]>([]);
   comparisonReport = signal<any[]>([]);
+  bottlesReport = signal<any[]>([]);
 
   // Agrupar comparación por Jornada (Repartidor + Fecha)
   groupedComparisonReport = computed(() => {
@@ -754,11 +836,19 @@ export class AdminReportsComponent implements OnInit {
     return { totalRevenue, totalTransactions, topMethod: topMethod.payment_method };
   });
 
+  bottlesKPIs = computed(() => {
+    const data = this.bottlesReport();
+    if (!data.length) return null;
+    const totalBottles = data.reduce((sum, row) => sum + Number(row.total_returned_bottles), 0);
+    const topRepartidor = [...data].sort((a, b) => Number(b.total_returned_bottles) - Number(a.total_returned_bottles))[0];
+    return { totalBottles, topRepartidor: topRepartidor.repartidor_name, topBottles: topRepartidor.total_returned_bottles };
+  });
+
   ngOnInit() {
     this.loadActiveTabReport();
   }
 
-  selectTab(tab: 'day' | 'repartidor' | 'product' | 'payment' | 'comparison') {
+  selectTab(tab: 'day' | 'repartidor' | 'product' | 'payment' | 'comparison' | 'bottles') {
     this.activeTab.set(tab);
     this.loadActiveTabReport();
   }
@@ -882,6 +972,9 @@ export class AdminReportsComponent implements OnInit {
       } else if (tab === 'comparison') {
         const data = await this.supabase.getReportLoadVsSoldVsRemaining(startDate, endDate);
         this.comparisonReport.set(data || []);
+      } else if (tab === 'bottles') {
+        const data = await this.supabase.getReportReturnedBottlesByRepartidor(startDate, endDate);
+        this.bottlesReport.set(data || []);
       }
     } catch (e) {
       console.error('Error al generar el reporte:', e);
